@@ -71,7 +71,7 @@ class Command(BaseCommand):
                             PriceHistory.objects.create(price_listing=listing, recorded_price=current_price)
                             self.stdout.write(f"  Oferta guardada: {game.title} a {current_price}€ en {store.name}")
 
-            # Control de descanso (Rate Limiting)
+            # Control de descanso 
             if index % batch_size == 0 and index < x:
                 self.stdout.write(self.style.WARNING(
                     f"\n[Lote completado: {index}/{x} juegos] -> Descansando 2 minutos para no saturar la API..."))
