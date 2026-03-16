@@ -6,7 +6,7 @@ from .models import Game, WishlistItem
 from django.db.models import Min
 
 
-# Vista para el registro de usuarios (se queda igual)
+# Vista para el registro de usuarios
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -19,11 +19,9 @@ def register(request):
     return render(request, 'tracker/register.html', {'form': form})
 
 
-# Vista actualizada para el Home
 def home(request):
     # 1. Anotamos el precio más bajo para TODOS los juegos primero
     # 2. Filtramos quedándonos solo con los que tienen un precio mínimo válido (lowest_price__isnull=False)
-    # Al hacerlo en este orden, no necesitamos usar .distinct() y evitamos el bug de SQLite
     games = Game.objects.annotate(
         lowest_price=Min('price_listings__current_price')
     ).filter(lowest_price__isnull=False)
