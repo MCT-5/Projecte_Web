@@ -8,7 +8,6 @@ from tracker.models import Game, Store, PriceListing, PriceHistory
 from django.utils.timezone import now
 
 
-# --- NUESTRA NUEVA FUNCIÓN LIMPIADORA ---
 def clean_game_title(title):
     """
     Limpia el título del juego para aumentar las coincidencias exactas en ITAD.
@@ -34,7 +33,6 @@ def clean_game_title(title):
     return t
 
 
-# --- NUESTRO COMANDO PRINCIPAL ---
 class Command(BaseCommand):
     help = 'Busca ofertas en ITAD usando rate limiting logarítmico y limpieza de títulos.'
 
@@ -62,7 +60,7 @@ class Command(BaseCommand):
 
         for index, game in enumerate(games, start=1):
 
-            # PASO CLAVE: Usamos la función para limpiar el título antes de buscarlo
+            #  Usamos la función para limpiar el título antes de buscarlo
             clean_name = clean_game_title(game.title)
 
             # Construimos la URL con el título ya limpio
