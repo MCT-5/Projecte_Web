@@ -34,7 +34,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("No hay juegos en la base de datos."))
             return
 
-        # Aplicamos tu fórmula matemática: x / 2)
+        
         if x > 1:
             batch_size = max(1, int(x / 20))
         else:
