@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deal Tracker - Inicio</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #1f1f1f;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e53e3e;
+        }
+        .navbar a, .navbar button {
+            color: #ffffff;
+            text-decoration: none;
+            margin-left: 15px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .navbar .btn-primary {
+            background-color: #e53e3e;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        .game-card {
+            background-color: #1f1f1f;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(229, 62, 62, 0.2);
+        }
+        .game-cover {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            background-color: #2d2d2d; /* Color de fondo si no hay imagen */
+        }
+        .game-info {
+            padding: 15px;
+        }
+        .game-title {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            color: #e53e3e;
+        }
+        .game-meta {
+            font-size: 0.9rem;
+            color: #a0aec0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .no-games {
+            text-align: center;
+            color: #a0aec0;
+            grid-column: 1 / -1;
+            padding: 50px;
+            background-color: #1f1f1f;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div style="font-size: 1.5rem; font-weight: bold; color: #e53e3e;">🎮 Deal Tracker</div>
+        <div style="display: flex; align-items: center;">
+            {% if user.is_authenticated %}
+                <span>Hola, <strong>{{ user.username }}</strong></span>
+                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary" style="margin-left: 15px;">Cerrar Sesión</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}">Iniciar Sesión</a>
+                <a href="{% url 'register' %}" class="btn-primary">Registrarse</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Catálogo de Juegos</h2>
+            <p style="color: #a0aec0; margin-top: -10px; margin-bottom: 20px;">
+                Mostrando {{ games|length }} juegos con ofertas activas.
+            </p>
+        <div class="game-grid">
+            {% for game in games %}
+                <a href="{% url 'game_detail' game.id %}" style="text-decoration: none; color: inherit; display: block;">
+                    <div class="game-card">
+                        {% if game.cover_image_url %}
+                            <img src="{{ game.cover_image_url }}" alt="Carátula de {{ game.title }}" class="game-cover">
+                        {% else %}
+                            <div class="game-cover" style="display: flex; align-items: center; justify-content: center; color: #718096;">Sin imagen</div>
+                        {% endif %}
+
+                        <div class="game-info">
+                            <h3 class="game-title" style="margin: 0 0 10px 0;">{{ game.title }}</h3>
+                            <div class="game-meta" style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>💻 {{ game.platform }}</span>
+                                <span style="color: #48bb78; font-weight: bold; font-size: 1.1rem;">Desde {{ game.lowest_price }} €</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="no-games">
+                    <h3>No hay juegos con ofertas registradas todavía</h3>
+                    <p>Ejecuta el script de precios para llenar la base de datos.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>
