@@ -1,7 +1,7 @@
 # Usamos una imagen oficial y ligera de Python
 FROM python:3.12-slim
 
-# Variables de entorno recomendadas por 12-factor (sin logs cacheados y sin archivos .pyc)
+# Variables de entorno recomendadas por 12-factor 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
@@ -11,7 +11,7 @@ WORKDIR /app
 # Instalamos uv
 RUN pip install uv
 
-# Copiamos el archivo de dependencias (necesitarás crear un requirements.txt usando uv)
+# Copiamos el archivo de dependencias 
 COPY requirements.txt /app/
 
 # Instalamos las dependencias del proyecto usando uv para mayor velocidad
