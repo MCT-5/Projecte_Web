@@ -9,28 +9,17 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-import os
 
+import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)knzu_cp#m##2@7&a*xt1nv#u@*hv=e5ugu$!0)-cup*sdnwj*'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
-
-# Application definition
+SECRET_KEY = os.getenv('SECRET_KEY', 'unsafe-dev-key')
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -57,8 +46,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,20 +60,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -102,38 +82,17 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
 
-# Redirigir al 'home' tras iniciar sesión
 LOGIN_REDIRECT_URL = 'home'
-# Redirigir a la pantalla de 'login' tras cerrar sesión
-LOGOUT_REDIRECT_URL = 'login'
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+LOGOUT_REDIRECT_URL = 'home'
 
-# <-- AÑADE ESTA LÍNEA AQUÍ -->
-# Carga las variables del archivo .env al entorno de tu ordenador
-load_dotenv(os.path.join(BASE_DIR, '.env'))
-# Lee la clave de RAWG desde el entorno.
-# Si no la encuentra, asigna un texto vacío por defecto.
 RAWG_API_KEY = os.getenv('RAWG_API_KEY', '')
 ITAD_API_KEY = os.getenv('ITAD_API_KEY', '')
-LOGOUT_REDIRECT_URL = 'home'
-# Permitimos que responda a localhost, a la IP local y a cualquier host de Docker
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

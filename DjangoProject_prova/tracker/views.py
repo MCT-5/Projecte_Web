@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.shortcuts import render, redirect, get_object_or_404
@@ -37,8 +39,8 @@ def game_detail(request, game_id):
     game = get_object_or_404(Game, id=game_id)
 
     # Extraemos todos los listados de precios asociados a este juego
-    # Usamos prefetch_related para optimizar la consulta a la base de datos
-    listings = game.price_listings.all().prefetch_related('price_history', 'store')
+    # Usamos select_related y prefetch_related para optimizar la consulta a la base de datos
+    listings = game.price_listings.all().select_related('store').prefetch_related('price_history')
 
     context = {
         'game': game,
@@ -53,14 +55,43 @@ def add_to_wishlist(request, game_id):
 
     if request.method == 'POST':
         # Capturamos el precio objetivo que el usuario escribió en el formulario
-        target_price = request.POST.get('target_price')
+        target_price_raw = request.POST.get('target_price', '').strip()
+
+        # Comprobamos que el usuario haya introducido un precio
+        if not target_price_raw:
+            listings = game.price_listings.all().select_related('store').prefetch_related('price_history')
+            return render(request, 'tracker/game_detail.html', {
+                'game': game,
+                'listings': listings,
+                'error': 'Debes introducir un precio objetivo.'
+            })
+
+        try:
+            # Intentamos convertir el valor introducido a número decimal
+            target_price = Decimal(target_price_raw)
+        except InvalidOperation:
+            listings = game.price_listings.all().select_related('store').prefetch_related('price_history')
+            return render(request, 'tracker/game_detail.html', {
+                'game': game,
+                'listings': listings,
+                'error': 'El precio objetivo debe ser un número válido.'
+            })
+
+        # Comprobamos que el precio no sea negativo
+        if target_price < 0:
+            listings = game.price_listings.all().select_related('store').prefetch_related('price_history')
+            return render(request, 'tracker/game_detail.html', {
+                'game': game,
+                'listings': listings,
+                'error': 'El precio objetivo no puede ser negativo.'
+            })
 
         # Creamos o actualizamos el item en la wishlist
         WishlistItem.objects.update_or_create(
             user=request.user,
             game=game,
             defaults={
-                'target_price': float(target_price),
+                'target_price': target_price,
                 'alert_enabled': True
             }
         )
