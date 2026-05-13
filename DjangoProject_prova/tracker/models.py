@@ -78,3 +78,17 @@ class PriceHistory(models.Model):
 
     def __str__(self):
         return f"{self.price_listing.game.title} - {self.recorded_price} on {self.timestamp.strftime('%Y-%m-%d')}"
+
+class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])  # 1 a 5 estrellas
+    comment = models.TextField(max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'game')  # Un usuario solo puede reseñar un juego una vez
+
+    def __str__(self):
+        return f"{self.user.username} - {self.game.title} ({self.rating}★)"
