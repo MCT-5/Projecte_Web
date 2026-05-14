@@ -1,92 +1,117 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ game.title }} - Deal Tracker</title>
-    <style>
-        body { background-color: #121212; color: #ffffff; font-family: sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: #1f1f1f; padding: 30px; border-radius: 10px; }
-        .header-section { display: flex; gap: 30px; margin-bottom: 40px; }
-        .game-cover { max-width: 250px; border-radius: 8px; }
-        .listing-card {
-            background: #2d2d2d;
-            padding: 12px 15px; /* Reducimos el relleno interno */
-            border-radius: 6px;
-            margin-bottom: 12px; /* Reducimos la separación entre tarjetas */
-            border-left: 4px solid #e53e3e;
-            font-size: 0.9rem; /* Achicamos un poco la letra general */
-        }
-        .listing-card h3 {
-            margin: 0 0 5px 0;
-            font-size: 1.1rem; /* Título de la tienda más pequeño */
-        }
-        .listing-card p {
-            margin: 3px 0;
-        }
-        .history-table th, .history-table td {
-            padding: 4px 8px; /* Filas de la tabla más finitas */
-            font-size: 0.85rem;
-        }
-        .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .history-table th, .history-table td { text-align: left; padding: 8px; border-bottom: 1px solid #4a5568; }
-        .btn-back { display: inline-block; margin-bottom: 20px; color: #e53e3e; text-decoration: none; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <a href="{% url 'home' %}" class="btn-back">← Volver al catálogo</a>
+{% extends 'base.html' %}
+{% block title %}{{ game.title }} — GameDeal{% endblock %}
 
-        <div class="header-section">
-            {% if game.cover_image_url %}
-                <img src="{{ game.cover_image_url }}" alt="{{ game.title }}" class="game-cover">
-            {% endif %}
-            <div>
-                <h1 style="color: #e53e3e; margin-top: 0;">{{ game.title }}</h1>
-                <p><strong>Plataforma:</strong> {{ game.platform }}</p>
-                <p><strong>Género:</strong> {{ game.genre }}</p>
-                {% if user.is_authenticated %}
-                     <form action="{% url 'add_to_wishlist' game.id %}" method="post" style="margin-top: 20px; background: #2d2d2d; padding: 15px; border-radius: 8px;">
-                        {% csrf_token %}
-                        <label for="target_price" style="font-weight: bold; color: #48bb78;">Avisarme cuando baje de (€):</label>
-                         <input type="number" step="0.01" name="target_price" id="target_price" required style="padding: 5px; margin-left: 10px; border-radius: 4px; border: 1px solid #4a5568; background: #1a1a1a; color: white;">
-                         <button type="submit" style="background: #48bb78; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-left: 10px;">Añadir a Wishlist</button>
-                     </form>
-                {% else %}
-                    <p style="color: #a0aec0; margin-top: 20px;"><em><a href="{% url 'login' %}" style="color: #63b3ed;">Inicia sesión</a> para añadir este juego a tu lista de deseados.</em></p>
-                {% endif %}
-            </div>
+{% block extra_head %}
+<style>
+  .hero { display: flex; gap: 2rem; margin-bottom: 2.5rem; align-items: flex-start; }
+  .hero-cover { width: 220px; flex-shrink: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .hero-cover img { width: 100%; display: block; }
+  .hero-cover-ph { width: 220px; height: 300px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 4rem; border-radius: var(--radius); border: 1px solid var(--border); }
+  .hero-info h1 { font-size: 2rem; margin-bottom: .75rem; }
+  .hero-actions { margin-top: 1.5rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+  .wishlist-box { background: var(--surface2); border: 1px solid var(--border); padding: 1rem 1.2rem; border-radius: var(--radius); margin-top: 1.2rem; }
+  .wishlist-box label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .4rem; }
+  .wishlist-box .inline { display: flex; gap: .5rem; align-items: center; }
+  .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+  .listing-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: .75rem; border-left: 3px solid var(--accent); }
+  .listing-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+  .listing-header h3 { font-size: 1rem; }
+  .listing-meta { display: flex; gap: .75rem; flex-wrap: wrap; font-size: .85rem; color: var(--muted); margin-top: .4rem; }
+  .listing-actions { display: flex; gap: .5rem; margin-top: .75rem; }
+  .history-mini { margin-top: .75rem; font-size: .82rem; color: var(--muted); }
+  .history-mini table { width: 100%; border-collapse: collapse; }
+  .history-mini td, .history-mini th { padding: .3rem .6rem; border-bottom: 1px solid var(--border); }
+  .history-mini th { color: var(--muted); font-weight: 600; font-size: .78rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <a href="{% url 'home' %}" class="btn-secondary btn-sm" style="margin-bottom:1.5rem;display:inline-flex;">← Back to catalog</a>
+
+  <div class="hero">
+    {% if game.cover_image_url %}
+      <div class="hero-cover"><img src="{{ game.cover_image_url }}" alt="{{ game.title }}"></div>
+    {% else %}
+      <div class="hero-cover-ph">🎮</div>
+    {% endif %}
+    <div class="hero-info">
+      <h1>{{ game.title }}</h1>
+      <div class="flex gap-2 mt-2">
+        <span class="badge badge-accent">{{ game.platform }}</span>
+        <span class="badge badge-yellow">{{ game.genre }}</span>
+      </div>
+
+      {% if user.is_authenticated %}
+        <div class="hero-actions">
+          <a href="{% url 'game_edit' game.pk %}" class="btn-secondary btn-sm">✏️ Edit Game</a>
+          <a href="{% url 'game_delete' game.pk %}" class="btn-danger btn-sm">🗑 Delete Game</a>
+          <a href="{% url 'pricelisting_add' game.id %}" class="btn-success btn-sm">+ Add Price</a>
         </div>
+      {% endif %}
 
-        <h2>Precios Actuales e Historial</h2>
-
-        {% for listing in listings %}
-            <div class="listing-card">
-                <h3>Tienda: {{ listing.store.name }}</h3>
-                <p><strong>Precio actual:</strong> {{ listing.current_price }} €</p>
-                <p><strong>Formato:</strong> {{ listing.get_format_type_display }}</p>
-                <a href="{{ listing.product_url }}" target="_blank" style="color: #63b3ed;">Ir a la tienda</a>
-
-                <h4 style="margin-top: 20px; margin-bottom: 10px;">Evolución de Precio:</h4>
-                {% if listing.price_history.all %}
-                    <table class="history-table">
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Precio Registrado</th>
-                        </tr>
-                        {% for history in listing.price_history.all %}
-                            <tr>
-                                <td>{{ history.timestamp|date:"d M Y, H:i" }}</td>
-                                <td>{{ history.recorded_price }} €</td>
-                            </tr>
-                        {% endfor %}
-                    </table>
-                {% else %}
-                    <p style="color: #a0aec0;">No hay historial de precios registrado todavía.</p>
-                {% endif %}
+      {% if user.is_authenticated %}
+        {% if user_wishlist_item %}
+          <div class="wishlist-box" style="border-color: var(--accent2);">
+            <p style="color: var(--accent2); font-weight:600; margin-bottom:.4rem;">⭐ In your wishlist</p>
+            <p class="text-sm text-muted">Target: €{{ user_wishlist_item.target_price|floatformat:2 }}</p>
+            <div class="flex gap-2 mt-2">
+              <a href="{% url 'wishlist_edit' user_wishlist_item.pk %}" class="btn-secondary btn-sm">Edit</a>
+              <a href="{% url 'wishlist_delete' user_wishlist_item.pk %}" class="btn-danger btn-sm">Remove</a>
             </div>
-        {% empty %}
-            <p>Este juego aún no tiene listados de precios en ninguna tienda.</p>
-        {% endfor %}
+          </div>
+        {% else %}
+          <div class="wishlist-box">
+            <label>Alert me when price drops below (€):</label>
+            <form method="post" action="{% url 'add_to_wishlist' game.id %}">
+              {% csrf_token %}
+              <div class="inline">
+                <input class="form-control" type="number" step="0.01" name="target_price" min="0" required placeholder="e.g. 19.99" style="max-width:160px;">
+                <button class="btn-success" type="submit">⭐ Add to Wishlist</button>
+              </div>
+            </form>
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="text-muted text-sm" style="margin-top:1rem;"><a href="{% url 'login' %}" style="color:var(--accent);">Sign in</a> to track this game.</p>
+      {% endif %}
     </div>
-</body>
-</html>
+  </div>
+
+  <div class="section-title">Price Listings</div>
+  {% for listing in listings %}
+    <div class="listing-card">
+      <div class="listing-header">
+        <h3>{{ listing.store.name }}</h3>
+        <span class="price-tag">€{{ listing.current_price|floatformat:2 }}</span>
+      </div>
+      <div class="listing-meta">
+        <span>{{ listing.get_format_type_display }}</span>
+        <a href="{{ listing.product_url }}" target="_blank" style="color: var(--accent);">Visit store →</a>
+        <span>Updated {{ listing.last_updated|date:"d M Y" }}</span>
+      </div>
+      {% if user.is_authenticated %}
+        <div class="listing-actions">
+          <a href="{% url 'pricelisting_edit' listing.pk %}" class="btn-secondary btn-sm">Edit</a>
+          <a href="{% url 'pricelisting_delete' listing.pk %}" class="btn-danger btn-sm">Delete</a>
+        </div>
+      {% endif %}
+      {% if listing.price_history.all %}
+        <details class="history-mini">
+          <summary style="cursor:pointer; margin-bottom:.5rem; color: var(--muted);">Price history ({{ listing.price_history.count }} entries)</summary>
+          <table>
+            <tr><th>Date</th><th>Price</th></tr>
+            {% for h in listing.price_history.all %}
+              <tr><td>{{ h.timestamp|date:"d M Y H:i" }}</td><td>€{{ h.recorded_price }}</td></tr>
+            {% endfor %}
+          </table>
+        </details>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="card"><div class="card-body text-muted">No price listings yet.
+      {% if user.is_authenticated %}<a href="{% url 'pricelisting_add' game.id %}" style="color:var(--accent);">Add one →</a>{% endif %}
+    </div></div>
+  {% endfor %}
+</div>
+{% endblock %}

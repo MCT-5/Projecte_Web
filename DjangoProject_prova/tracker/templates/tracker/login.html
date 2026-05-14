@@ -1,21 +1,24 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Iniciar Sesión - Deal Tracker</title>
-</head>
-<body style="background-color: #1a1a1a; color: white; font-family: sans-serif; text-align: center; padding-top: 20px;">
-
-    <div style="max-width: 340px; margin: 0 auto; text-align: left; margin-bottom: 20px;">
-        <a href="{% url 'home' %}" style="color: #e53e3e; text-decoration: none; font-weight: bold;">← Volver al inicio</a>
-    </div>
-
-    <h2>Iniciar Sesión</h2>
-    <form method="post" style="background: #2d2d2d; padding: 20px; width: 300px; margin: 0 auto; border-radius: 8px;">
+{% extends 'base.html' %}
+{% block title %}Sign In — GameDeal{% endblock %}
+{% block content %}
+<div class="container" style="max-width:420px;margin-top:4rem;">
+  <div class="card">
+    <div class="card-body">
+      <h2 style="margin-bottom:1.5rem;text-align:center;">Sign In</h2>
+      <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" style="background: #e53e3e; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; width: 100%;">Entrar</button>
-    </form>
-    <p>¿No tienes cuenta? <a href="{% url 'register' %}" style="color: #63b3ed;">Regístrate aquí</a></p>
-</body>
-</html>
+        {% for field in form %}
+          <div class="form-group">
+            <label>{{ field.label }}</label>
+            <input class="form-control" type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" {% if field.value %}value="{{ field.value }}"{% endif %} autocomplete="off">
+            {% if field.errors %}<ul class="errorlist">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+        {% endfor %}
+        {% if form.non_field_errors %}<p style="color:var(--danger);font-size:.88rem;margin-bottom:.8rem;">{{ form.non_field_errors }}</p>{% endif %}
+        <button class="btn-primary" type="submit" style="width:100%;justify-content:center;margin-top:.5rem;">Sign In</button>
+      </form>
+      <p class="text-muted text-sm" style="margin-top:1.2rem;text-align:center;">No account? <a href="{% url 'register' %}" style="color:var(--accent);">Register</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Price Listing — GameDeal{% endblock %}
+{% block extra_head %}
+<style>
+  select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237b849a' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .75rem center; padding-right: 2rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container" style="max-width:520px;">
+  <div class="page-header"><h1>{% if form.instance.pk %}Edit Price Listing{% else %}Add Price Listing{% endif %}</h1></div>
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="{{ form.game.id_for_label }}">Game</label>
+          <select class="form-control" name="game" id="{{ form.game.id_for_label }}">
+            {% for val, label in form.game.field.choices %}
+              <option value="{{ val }}" {% if form.game.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if form.game.errors %}<ul class="errorlist">{% for e in form.game.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.store.id_for_label }}">Store</label>
+          <select class="form-control" name="store" id="{{ form.store.id_for_label }}">
+            {% for val, label in form.store.field.choices %}
+              <option value="{{ val }}" {% if form.store.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if form.store.errors %}<ul class="errorlist">{% for e in form.store.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.current_price.id_for_label }}">Current Price (€)</label>
+          <input class="form-control" type="number" step="0.01" min="0" name="current_price" value="{{ form.current_price.value|default_if_none:'' }}">
+          {% if form.current_price.errors %}<ul class="errorlist">{% for e in form.current_price.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.format_type.id_for_label }}">Format</label>
+          <select class="form-control" name="format_type" id="{{ form.format_type.id_for_label }}">
+            {% for val, label in form.format_type.field.choices %}
+              <option value="{{ val }}" {% if form.format_type.value == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if form.format_type.errors %}<ul class="errorlist">{% for e in form.format_type.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Product URL</label>
+          <input class="form-control" type="url" name="product_url" value="{{ form.product_url.value|default_if_none:'' }}" placeholder="https://…">
+          {% if form.product_url.errors %}<ul class="errorlist">{% for e in form.product_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" type="submit">{% if form.instance.pk %}Save{% else %}Add Listing{% endif %}</button>
+          <a href="javascript:history.back()" class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

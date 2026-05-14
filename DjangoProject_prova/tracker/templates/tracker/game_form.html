@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Game — GameDeal{% endblock %}
+
+{% block extra_head %}
+<style>
+  #rawg-results { position: absolute; z-index: 50; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; width: 100%; max-height: 300px; overflow-y: auto; margin-top: 2px; display: none; }
+  .rawg-item { padding: .6rem 1rem; cursor: pointer; display: flex; gap: .75rem; align-items: center; font-size: .88rem; }
+  .rawg-item:hover { background: var(--border); }
+  .rawg-thumb { width: 48px; height: 34px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: var(--border); }
+  .rawg-name { font-weight: 600; }
+  .rawg-sub  { color: var(--muted); font-size: .78rem; }
+  .title-wrap { position: relative; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{% if form.instance.pk %}Edit Game{% else %}Add New Game{% endif %}</h1>
+    <p class="text-muted">{% if not form.instance.pk %}Start typing a game title to auto-fill details from RAWG.{% endif %}</p>
+  </div>
+  <div class="card form-card">
+    <div class="card-body">
+      <form method="post" id="game-form">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="id_title">Title</label>
+          <div class="title-wrap">
+            <input class="form-control" type="text" id="id_title" name="title" value="{{ form.title.value|default_if_none:'' }}" autocomplete="off" placeholder="Search for a game…">
+            <div id="rawg-results"></div>
+          </div>
+          {% if form.title.errors %}<ul class="errorlist">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_platform">Platform</label>
+          <input class="form-control" type="text" id="id_platform" name="platform" value="{{ form.platform.value|default_if_none:'' }}" placeholder="PC, PlayStation 5, Xbox…">
+          {% if form.platform.errors %}<ul class="errorlist">{% for e in form.platform.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_genre">Genre</label>
+          <input class="form-control" type="text" id="id_genre" name="genre" value="{{ form.genre.value|default_if_none:'' }}" placeholder="Action, RPG, Strategy…">
+          {% if form.genre.errors %}<ul class="errorlist">{% for e in form.genre.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label for="id_cover_image_url">Cover Image URL</label>
+          <input class="form-control" type="url" id="id_cover_image_url" name="cover_image_url" value="{{ form.cover_image_url.value|default_if_none:'' }}" placeholder="https://…">
+          {% if form.cover_image_url.errors %}<ul class="errorlist">{% for e in form.cover_image_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" type="submit">{% if form.instance.pk %}Save Changes{% else %}Add Game{% endif %}</button>
+          <a href="{% url 'home' %}" class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+(function($){
+  let debounce;
+  $('#id_title').on('input', function(){
+    clearTimeout(debounce);
+    const q = $(this).val().trim();
+    if(q.length < 2){ $('#rawg-results').hide(); return; }
+    debounce = setTimeout(function(){
+      $.get('{% url "rawg_autocomplete" %}', {q: q}, function(data){
+        const $box = $('#rawg-results').empty();
+        if(!data.results || !data.results.length){ $box.hide(); return; }
+        data.results.forEach(function(g){
+          const $item = $('<div class="rawg-item">');
+          if(g.background_image){
+            $item.append($('<img class="rawg-thumb">').attr('src', g.background_image).attr('alt',''));
+          }
+          const $txt = $('<div>');
+          $txt.append($('<div class="rawg-name">').text(g.name));
+          $txt.append($('<div class="rawg-sub">').text([g.platforms, g.genres].filter(Boolean).join(' · ')));
+          $item.append($txt);
+          $item.on('click', function(){
+            $('#id_title').val(g.name);
+            if(g.platforms) $('#id_platform').val(g.platforms.split(', ')[0]);
+            if(g.genres)    $('#id_genre').val(g.genres.split(', ')[0]);
+            if(g.background_image) $('#id_cover_image_url').val(g.background_image);
+            $box.hide();
+          });
+          $box.append($item);
+        });
+        $box.show();
+      });
+    }, 300);
+  });
+  $(document).on('click', function(e){ if(!$(e.target).closest('.title-wrap').length) $('#rawg-results').hide(); });
+})(jQuery);
+</script>
+{% endblock %}

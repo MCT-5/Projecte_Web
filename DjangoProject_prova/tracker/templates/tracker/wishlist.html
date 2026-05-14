@@ -1,42 +1,55 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Mi Wishlist - Deal Tracker</title>
-    <style>
-        body { background-color: #121212; color: #ffffff; font-family: sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .wishlist-card { background: #1f1f1f; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; border-left: 5px solid #48bb78;}
-        .game-img { width: 100px; border-radius: 5px; }
-        .nav-link { color: #63b3ed; text-decoration: none; font-size: 1.1rem; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h1 style="color: #48bb78;">⭐ Mi Lista de Deseados</h1>
-            <a href="{% url 'home' %}" class="nav-link">Ir al Catálogo</a>
+{% extends 'base.html' %}
+{% block title %}My Wishlist — GameDeal{% endblock %}
+{% block extra_head %}
+<style>
+  .wishlist-grid { display: flex; flex-direction: column; gap: .75rem; }
+  .wish-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1.25rem; border-left: 3px solid var(--accent2); }
+  .wish-img { width: 80px; height: 100px; object-fit: cover; border-radius: 5px; flex-shrink: 0; background: var(--surface2); }
+  .wish-img-ph { width: 80px; height: 100px; background: var(--surface2); border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+  .wish-info { flex: 1; }
+  .wish-info h3 { margin-bottom: .4rem; }
+  .wish-actions { display: flex; gap: .5rem; flex-shrink: 0; }
+  .empty-state { text-align: center; padding: 4rem; color: var(--muted); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header flex justify-between items-center">
+    <div><h1>⭐ My Wishlist</h1><p class="text-muted">{{ items|length }} item{% if items|length != 1 %}s{% endif %} tracked</p></div>
+    <a href="{% url 'home' %}" class="btn-secondary">Browse Catalog</a>
+  </div>
+  <div class="wishlist-grid">
+    {% for item in items %}
+      <div class="wish-card">
+        {% if item.game.cover_image_url %}
+          <img src="{{ item.game.cover_image_url }}" class="wish-img" alt="{{ item.game.title }}">
+        {% else %}
+          <div class="wish-img-ph">🎮</div>
+        {% endif %}
+        <div class="wish-info">
+          <h3><a href="{% url 'game_detail' item.game.id %}" style="color:var(--text);text-decoration:none;">{{ item.game.title }}</a></h3>
+          <div class="flex gap-2 mt-1">
+            <span class="badge badge-accent">{{ item.game.platform }}</span>
+            {% if item.alert_enabled %}<span class="badge badge-green">🔔 Alert on</span>{% else %}<span class="badge badge-red">🔕 Alert off</span>{% endif %}
+          </div>
+          <p class="mt-2 text-sm">Target: <strong class="price-tag">€{{ item.target_price|floatformat:2 }}</strong></p>
+          <p class="text-muted text-sm">Added {{ item.added_on|date:"d M Y" }}</p>
         </div>
-
-        {% for item in items %}
-            <div class="wishlist-card">
-                {% if item.game.cover_image_url %}
-                    <img src="{{ item.game.cover_image_url }}" alt="Carátula" class="game-img">
-                {% endif %}
-                <div>
-                    <h2 style="margin: 0 0 10px 0;">
-                        <a href="{% url 'game_detail' item.game.id %}" style="color: white; text-decoration: none;">{{ item.game.title }}</a>
-                    </h2>
-                    <p style="margin: 5px 0;"><strong>Precio Objetivo:</strong> <span style="color: #48bb78; font-weight: bold;">{{ item.target_price }} €</span></p>
-                    <p style="margin: 5px 0; color: #a0aec0; font-size: 0.9rem;">Añadido el: {{ item.added_on|date:"d M Y" }}</p>
-                </div>
-            </div>
-        {% empty %}
-            <div style="background: #1f1f1f; padding: 40px; text-align: center; border-radius: 8px;">
-                <h3 style="color: #a0aec0;">Tu lista está vacía</h3>
-                <p>Navega por el catálogo y añade juegos para recibir alertas.</p>
-            </div>
-        {% endfor %}
-    </div>
-</body>
-</html>
+        <div class="wish-actions">
+          <a href="{% url 'wishlist_edit' item.pk %}" class="btn-secondary btn-sm">Edit</a>
+          <a href="{% url 'wishlist_delete' item.pk %}" class="btn-danger btn-sm">Remove</a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-state card">
+        <div class="card-body">
+          <p style="font-size:3rem;margin-bottom:1rem;">⭐</p>
+          <h3 style="color:var(--text);">Your wishlist is empty</h3>
+          <p style="margin-top:.5rem;">Browse the catalog and track prices on games you want.</p>
+          <a href="{% url 'home' %}" class="btn-primary" style="margin-top:1.5rem;">Browse Catalog</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
