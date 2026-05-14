@@ -4,10 +4,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.db.models import Min
+from django.db.models import Min, Max, Avg
+from django.contrib import messages
 from .models import Game, WishlistItem, Review, Store
 from .forms import ReviewForm, WishlistItemForm
-
 
 
 def register(request):
@@ -23,15 +23,13 @@ def register(request):
 
 
 def home(request):
-    from django.db.models import Max, Avg
-
     games = Game.objects.annotate(
         lowest_price=Min('price_listings__current_price')
     ).filter(lowest_price__isnull=False)
 
     total_stores = Store.objects.count()
 
-    # Calcular ahorro medio: comparar precio mínimo vs precio máximo por juego
+    # Calcular ahorro medio
     savings = Game.objects.annotate(
         min_price=Min('price_listings__current_price'),
         max_price=Max('price_listings__current_price'),
@@ -80,12 +78,38 @@ def game_detail(request, game_id):
 def add_review(request, game_id):
     game = get_object_or_404(Game, id=game_id)
     if request.method == 'POST':
+        comment = request.POST.get('comment', '').strip()
+        rating = request.POST.get('rating')
+
+        # 1. Validación comentario vacío
+        if not comment:
+            messages.error(request, "Comment cannot be empty")
+            # Es vital volver a pasar los listings y reviews para que la página no salga vacía
+            return render(request, 'tracker/game_detail.html', {
+                'game': game,
+                'reviews': game.reviews.all(),
+                'listings': game.price_listings.all(),
+                'review_form': ReviewForm(request.POST)
+            })
+
+        # 2. Validación duplicados
+        if Review.objects.filter(user=request.user, game=game).exists():
+            messages.error(request, "You have already reviewed this game")
+            return render(request, 'tracker/game_detail.html', {
+                'game': game,
+                'reviews': game.reviews.all(),
+                'listings': game.price_listings.all()
+            })
+
         form = ReviewForm(request.POST)
         if form.is_valid():
             review = form.save(commit=False)
             review.user = request.user
             review.game = game
             review.save()
+            messages.success(request, "Review added successfully")
+            return redirect('game_detail', game_id=game.id)
+
     return redirect('game_detail', game_id=game.id)
 
 
@@ -115,11 +139,24 @@ def delete_review(request, review_id):
 def add_to_wishlist(request, game_id):
     game = get_object_or_404(Game, id=game_id)
     if request.method == 'POST':
-        target_price = request.POST.get('target_price')
+        target_price_raw = request.POST.get('target_price', '0')
+        try:
+            target_price = float(target_price_raw)
+        except ValueError:
+            target_price = 0
+
+        if target_price <= 0:
+            messages.error(request, "Price must be positive")
+            return render(request, 'tracker/game_detail.html', {
+                'game': game,
+                'reviews': game.reviews.all(),
+                'listings': game.price_listings.all()
+            })
+
         WishlistItem.objects.update_or_create(
             user=request.user,
             game=game,
-            defaults={'target_price': float(target_price), 'alert_enabled': True}
+            defaults={'target_price': target_price, 'alert_enabled': True}
         )
         return redirect('my_wishlist')
     return redirect('game_detail', game_id=game.id)
@@ -151,6 +188,7 @@ def delete_wishlist_item(request, item_id):
         item.delete()
     return redirect('my_wishlist')
 
+
 def search_games_api(request):
     query = request.GET.get('q', '').strip()
     if len(query) < 2:
@@ -177,6 +215,7 @@ def search_games_api(request):
         return JsonResponse({'results': results})
     except Exception:
         return JsonResponse({'results': []})
+
 
 def find_game(request):
     name = request.GET.get('name', '').strip()

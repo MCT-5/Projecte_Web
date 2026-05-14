@@ -1,10 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{% block title %}Deal Tracker{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg:#08080f; --bg2:#0e0e1c; --bg3:#13132a; --bg4:#1a1a35;
+            --border:rgba(140,130,255,0.12); --border2:rgba(140,130,255,0.22);
+            --accent:#7c6fff; --accent2:#a89fff; --text:#e8e6ff; --text2:#8a88a8;
+            --green:#3ecf8e; --red:#f25050; --r-md:10px;
+        }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'DM Sans', sans-serif; margin: 0; padding: 20px;
+        }
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1000px; margin: 0 auto 30px; padding: 15px;
+            background: var(--bg2); border-radius: var(--r-md); border: 1px solid var(--border);
+        }
+        .nav-links a { color: var(--text2); text-decoration: none; margin-left: 20px; font-size: 14px; }
+        .nav-links a:hover { color: var(--accent); }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .messages { list-style: none; padding: 0; margin-bottom: 20px; }
+        .message { padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; }
+        .message.success { background: rgba(62,207,142,0.1); color: var(--green); border: 1px solid var(--green); }
+        .message.error { background: rgba(242,80,80,0.1); color: var(--red); border: 1px solid var(--red); }
+        {% block extra_css %}{% endblock %}
+    </style>
 </head>
 <body>
+    <nav>
+        <div style="font-family:'Syne'; font-weight:700; color:var(--accent);">🎮 Deal Tracker</div>
+        <div class="nav-links">
+            <a href="{% url 'home' %}">Inicio</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'my_wishlist' %}">Mi Wishlist</a>
+                <span style="color: var(--text3); margin-left:15px;">|</span>
+                <form action="{% url 'logout' %}" method="post" style="display:inline; margin-left:15px;">
+                    {% csrf_token %}<button type="submit" style="background:none; border:none; color:var(--text2); cursor:pointer;">Salir</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}">Entrar</a>
+                <a href="{% url 'register' %}" style="color:var(--accent)">Registro</a>
+            {% endif %}
+        </div>
+    </nav>
 
+    <div class="container">
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="message {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
