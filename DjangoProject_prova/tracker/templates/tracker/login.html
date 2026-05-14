@@ -1,103 +1,43 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Iniciar Sesión — Deal Tracker</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-<style>
-  :root {
-    --bg:#08080f; --bg2:#0e0e1c; --bg3:#13132a;
-    --border:rgba(140,130,255,0.12); --border2:rgba(140,130,255,0.22);
-    --accent:#7c6fff; --accent2: #20344a; --accent-bg:rgba(124,111,255,0.12);
-    --green:#3ecf8e; --text:#e8e6ff; --text2:#8a88a8; --text3:#4a4868;
-    --r-sm:6px; --r-md:10px; --r-lg:16px;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  h1,h2,h3 { font-family: 'Syne', sans-serif; }
-
-  .card {
-    background: var(--bg2); border: 1px solid var(--border2);
-    border-radius: var(--r-lg); padding: 36px 32px;
-    width: 100%; max-width: 380px;
-  }
-  .card-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; justify-content: center; }
-  .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .logo-text { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent2); }
-  .card h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; text-align: center; }
-  .card-sub { font-size: 13px; color: var(--text3); text-align: center; margin-bottom: 24px; }
-
-  .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px; }
-  .form-group input {
-    width: 100%; background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: var(--r-sm); padding: 10px 14px;
-    font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
-    outline: none; transition: border-color .2s;
-  }
-  .form-group input:focus { border-color: var(--accent); }
-
-  /* Override Django form styles */
-  form p { margin-bottom: 16px; }
-  form p label { display: block; font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px; }
-  form p input {
-    width: 100%; background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: var(--r-sm); padding: 10px 14px;
-    font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
-    outline: none; transition: border-color .2s;
-  }
-  form p input:focus { border-color: var(--accent); }
-
-  .btn-submit {
-    width: 100%; padding: 11px; border-radius: var(--r-sm);
-    background: var(--accent); border: none; color: #fff;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    font-family: 'Syne', sans-serif; margin-top: 8px;
-    transition: background .2s;
-  }
-  .btn-submit:hover { background: #9080ff; }
-
-  .card-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text3); }
-  .card-footer a { color: var(--accent2); text-decoration: none; }
-  .card-footer a:hover { text-decoration: underline; }
-
-  .back-link { margin-bottom: 24px; font-size: 13px; }
-  .back-link a { color: var(--text2); text-decoration: none; }
-  .back-link a:hover { color: var(--accent2); }
-
-  .errorlist { background: rgba(242,80,80,0.1); border: 1px solid rgba(242,80,80,0.3); border-radius: var(--r-sm); padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #f25050; list-style: none; }
-</style>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Iniciar Sesión — Deal Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap"
+          rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
 
 <div class="back-link">
-  <a href="{% url 'home' %}">← Volver al catálogo</a>
+    <a href="{% url 'home' %}">← Volver al catálogo</a>
 </div>
 
 <div class="card">
-  <div class="card-logo">
-    <div class="logo-icon">🎮</div>
-    <span class="logo-text">Deal Tracker</span>
-  </div>
-  <h2>Iniciar sesión</h2>
-  <p class="card-sub">Accede para gestionar tu wishlist y reseñas</p>
+    <div class="card-logo">
+        <div class="logo-icon">🎮</div>
+        <span class="logo-text">Deal Tracker</span>
+    </div>
+    <h2>Iniciar sesión</h2>
+    <p class="card-sub">Accede para gestionar tu wishlist y reseñas</p>
 
-  <form method="post">
-    {% csrf_token %}
-    {% if form.errors %}
-      <ul class="errorlist">
-        <li>Usuario o contraseña incorrectos.</li>
-      </ul>
-    {% endif %}
-    {{ form.as_p }}
-    <button type="submit" class="btn-submit">Entrar →</button>
-  </form>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.errors %}
+            <ul class="errorlist">
+                <li>Usuario o contraseña incorrectos.</li>
+            </ul>
+        {% endif %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-submit">Entrar →</button>
+    </form>
 
-  <div class="card-footer">
-    ¿No tienes cuenta? <a href="{% url 'register' %}">Regístrate aquí</a>
-  </div>
+    <div class="card-footer">
+        ¿No tienes cuenta? <a href="{% url 'register' %}">Regístrate aquí</a>
+    </div>
 </div>
 
 </body>

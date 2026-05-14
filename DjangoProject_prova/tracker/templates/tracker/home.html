@@ -1,287 +1,145 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Deal Tracker — Comparador de videojuegos</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-<style>
-  :root {
-    --bg:        #08080f;
-    --bg2:       #0e0e1c;
-    --bg3:       #13132a;
-    --bg4:       #1a1a35;
-    --border:    rgba(140,130,255,0.12);
-    --border2:   rgba(140,130,255,0.22);
-    --accent:    #7c6fff;
-    --accent2:   #ba9fff;
-    --accent-bg: rgba(124,111,255,0.12);
-    --green:     #3ecf8e;
-    --green-bg:  rgba(62,207,142,0.1);
-    --amber:     #f5a623;
-    --red:       #f25050;
-    --text:      #e8e6ff;
-    --text2:     #8a88a8;
-    --text3:     #4a4868;
-    --r-sm:      6px;
-    --r-md:      10px;
-    --r-lg:      16px;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  h1, h2, h3, .logo { font-family: 'Syne', sans-serif; }
-
-  /* TOPBAR */
-  .topbar {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(8,8,15,0.92);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px; height: 56px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .logo {
-    font-size: 18px; font-weight: 700; color: var(--accent2);
-    letter-spacing: -0.5px;
-    display: flex; align-items: center; gap: 8px; text-decoration: none;
-  }
-  .logo-icon {
-    width: 28px; height: 28px; background: var(--accent);
-    border-radius: 7px; display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-  }
-  .topbar-nav { display: flex; align-items: center; gap: 6px; }
-  .nav-link {
-    padding: 6px 14px; border-radius: var(--r-sm);
-    font-size: 13px; color: var(--text2); cursor: pointer;
-    transition: all .15s; border: none; background: transparent;
-    font-family: 'DM Sans', sans-serif; text-decoration: none;
-  }
-  .nav-link:hover { color: var(--text); background: var(--bg3); }
-  .nav-link.active { color: var(--accent2); background: var(--accent-bg); }
-  .btn-primary {
-    padding: 7px 16px; border-radius: var(--r-sm);
-    background: var(--accent); color: #fff; border: none;
-    font-size: 13px; font-weight: 500; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; text-decoration: none;
-  }
-  .btn-primary:hover { background: #9080ff; }
-  .btn-outline {
-    padding: 6px 14px; border-radius: var(--r-sm);
-    background: transparent; color: var(--accent2);
-    border: 1px solid var(--border2); font-size: 13px; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; text-decoration: none;
-  }
-  .btn-outline:hover { background: var(--accent-bg); }
-
-  /* HERO */
-  .hero-section {
-    padding: 70px 28px 50px;
-    text-align: center; position: relative; overflow: visible;
-  }
-  .hero-section::before {
-    content: '';
-    position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
-    width: 500px; height: 300px;
-    background: radial-gradient(ellipse, rgba(124,111,255,0.15) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .hero-section h1 {
-    font-size: clamp(28px, 5vw, 42px); font-weight: 700;
-    line-height: 1.15; margin-bottom: 14px; letter-spacing: -1px;
-  }
-  .hero-section h1 span { color: var(--accent2); }
-  .hero-section p { font-size: 15px; color: var(--text2); margin-bottom: 32px; }
-  .search-wrap {
-    display: flex;
-    background: var(--bg3); border: 1px solid var(--border2);
-    border-radius: var(--r-lg); overflow: hidden;
-  }
-  .search-wrap input {
-    flex: 1; background: transparent; border: none; outline: none;
-    padding: 14px 20px; font-size: 14px; color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-  }
-  .search-wrap input::placeholder { color: var(--text3); }
-  .search-wrap button {
-    background: var(--accent); border: none; color: #fff;
-    padding: 14px 24px; font-size: 14px; font-weight: 500; cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .search-wrap button:hover { background: #9080ff; }
-
-  /* STATS */
-  .section { padding: 20px 28px; }
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 32px; }
-  .stat-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: var(--r-md); padding: 14px 16px; text-align: center;
-  }
-  .stat-num { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: var(--accent2); }
-  .stat-label { font-size: 11px; color: var(--text3); margin-top: 3px; }
-
-  /* GRID */
-  .section-header {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
-  }
-  .section-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600; }
-  .games-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 14px;
-  }
-  .game-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: var(--r-lg); overflow: hidden; cursor: pointer;
-    transition: all .2s; text-decoration: none; color: inherit; display: block;
-  }
-  .game-card:hover { border-color: var(--border2); transform: translateY(-3px); }
-  .game-thumb {
-    width: 100%; height: 200px; object-fit: cover;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--bg3); font-size: 40px;
-  }
-  .game-info { padding: 10px 12px 14px; }
-  .game-title {
-    font-size: 13px; font-weight: 500; color: var(--text);
-    margin-bottom: 6px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .game-price { font-size: 13px; color: var(--green); font-weight: 600; }
-  .game-platform { font-size: 10px; color: var(--text3); margin-top: 3px; }
-  .no-games {
-    grid-column: 1 / -1; text-align: center;
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: var(--r-lg); padding: 50px; color: var(--text3);
-  }
-</style>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Deal Tracker — Comparador de videojuegos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap"
+          rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
 </head>
 <body>
 
 <!-- TOPBAR -->
 <nav class="topbar">
-  <a href="{% url 'home' %}" class="logo">
-    <div class="logo-icon">🎮</div>
-    Deal Tracker
-  </a>
-  <div class="topbar-nav">
-    {% if user.is_authenticated %}
-      <span style="font-size:13px; color:var(--text2);">Hola, <strong style="color:var(--accent2);">{{ user.username }}</strong></span>
-      <a href="{% url 'home' %}" class="nav-link active">Inicio</a>
-      <a href="#games-grid" class="nav-link">Catálogo</a>
-      <a href="{% url 'my_wishlist' %}" class="nav-link">Wishlist</a>
-      <form action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="btn-outline">Cerrar sesión</button>
-      </form>
-    {% else %}
-      <a href="{% url 'home' %}" class="nav-link active">Inicio</a>
-      <a href="#games-grid" class="nav-link">Catálogo</a>
-      <a href="{% url 'login' %}" class="nav-link">Iniciar sesión</a>
-      <a href="{% url 'register' %}" class="btn-primary">Registrarse</a>
-    {% endif %}
-  </div>
+    <a href="{% url 'home' %}" class="logo">
+        <div class="logo-icon">🎮</div>
+        Deal Tracker
+    </a>
+    <div class="topbar-nav">
+        {% if user.is_authenticated %}
+            <span style="font-size:13px; color:var(--text2);">Hola, <strong
+                    style="color:var(--accent2);">{{ user.username }}</strong></span>
+            <a href="{% url 'home' %}" class="nav-link active">Inicio</a>
+            <a href="#games-grid" class="nav-link">Catálogo</a>
+            <a href="{% url 'my_wishlist' %}" class="nav-link">Wishlist</a>
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-outline">Cerrar sesión</button>
+            </form>
+        {% else %}
+            <a href="{% url 'home' %}" class="nav-link active">Inicio</a>
+            <a href="#games-grid" class="nav-link">Catálogo</a>
+            <a href="{% url 'login' %}" class="nav-link">Iniciar sesión</a>
+            <a href="{% url 'register' %}" class="btn-primary">Registrarse</a>
+        {% endif %}
+    </div>
 </nav>
 
 <!-- HERO -->
 <div class="hero-section">
-  <h1>El <span>mejor precio</span> para<br>tus videojuegos</h1>
-  <p>Compara precios en Steam, GOG, Humble Store y más.<br>Digital y físico. Todo en un solo lugar.</p>
-  <div style="max-width:540px; margin: 0 auto; position: relative;">
-    <div class="search-wrap">
-      <input id="search-input" placeholder="Busca un juego... p.ej. Elden Ring" autocomplete="off" oninput="onSearchInput(this.value)"/>
-      <button onclick="filterGames(document.getElementById('search-input').value)">🔍 Buscar</button>
-    </div>
-    <div id="autocomplete-box" style="
+    <h1>El <span>mejor precio</span> para<br>tus videojuegos</h1>
+    <p>Compara precios en Steam, GOG, Humble Store y más.<br>Digital y físico. Todo en un solo lugar.</p>
+    <div style="max-width:540px; margin: 0 auto; position: relative;">
+        <div class="search-wrap">
+            <input id="search-input" placeholder="Busca un juego... p.ej. Elden Ring" autocomplete="off"
+                   oninput="onSearchInput(this.value)"/>
+            <button onclick="filterGames(document.getElementById('search-input').value)">🔍 Buscar</button>
+        </div>
+        <div id="autocomplete-box" style="
       display:none; position:absolute; top:100%; left:0; right:0; z-index:200;
       background:#13132a; border:1px solid rgba(140,130,255,0.3);
       border-radius:0 0 12px 12px; overflow:hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     "></div>
-  </div>
+    </div>
 </div>
 
 <!-- STATS -->
 <div class="section">
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-num">{{ games|length }}</div>
-      <div class="stat-label">Juegos con ofertas</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">{{ total_stores }}</div>
-      <div class="stat-label">Tiendas comparadas</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-num" style="color:var(--green);">~{{ avg_saving }}%</div>
-      <div class="stat-label">Ahorro medio vs más caro</div>
-    </div>
-  </div>
-
-  <div class="section-header">
-    <span class="section-title">Catálogo de juegos</span>
-    <span style="font-size:12px; color:var(--text3);">{{ games|length }} juegos con ofertas activas</span>
-  </div>
-
-  <div class="games-grid" id="games-grid">
-    {% for game in games %}
-      <a href="{% url 'game_detail' game.id %}" class="game-card" data-title="{{ game.title|lower }}">
-        {% if game.cover_image_url %}
-          <img src="{{ game.cover_image_url }}" alt="{{ game.title }}" class="game-thumb">
-        {% else %}
-          <div class="game-thumb">🎮</div>
-        {% endif %}
-        <div class="game-info">
-          <div class="game-title">{{ game.title }}</div>
-          <div class="game-price">desde {{ game.lowest_price|floatformat:2 }} €</div>
-          <div class="game-platform">{{ game.platform }} · {{ game.genre }}</div>
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-num">{{ games|length }}</div>
+            <div class="stat-label">Juegos con ofertas</div>
         </div>
-      </a>
-    {% empty %}
-      <div class="no-games">
-        <h3>No hay juegos con ofertas todavía</h3>
-        <p>Ejecuta el script de precios para llenar la base de datos.</p>
-      </div>
-    {% endfor %}
-  </div>
+        <div class="stat-card">
+            <div class="stat-num">{{ total_stores }}</div>
+            <div class="stat-label">Tiendas comparadas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" style="color:var(--green);">~{{ avg_saving }}%</div>
+            <div class="stat-label">Ahorro medio vs más caro</div>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">Catálogo de juegos</span>
+        <span style="font-size:12px; color:var(--text3);">{{ games|length }} juegos con ofertas activas</span>
+    </div>
+
+    <div class="games-grid" id="games-grid">
+        {% for game in games %}
+            <a href="{% url 'game_detail' game.id %}" class="game-card" data-title="{{ game.title|lower }}">
+                {% if game.cover_image_url %}
+                    <img src="{{ game.cover_image_url }}" alt="{{ game.title }}" class="game-thumb">
+                {% else %}
+                    <div class="game-thumb">🎮</div>
+                {% endif %}
+                <div class="game-info">
+                    <div class="game-title">{{ game.title }}</div>
+                    <div class="game-price">desde {{ game.lowest_price|floatformat:2 }} €</div>
+                    <div class="game-platform">{{ game.platform }} · {{ game.genre }}</div>
+                </div>
+            </a>
+        {% empty %}
+            <div class="no-games">
+                <h3>No hay juegos con ofertas todavía</h3>
+                <p>Ejecuta el script de precios para llenar la base de datos.</p>
+            </div>
+        {% endfor %}
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
-  function filterGames(query) {
-    const q = query.toLowerCase();
-    document.querySelectorAll('#games-grid .game-card').forEach(card => {
-      const title = card.dataset.title || '';
-      card.style.display = title.includes(q) ? 'block' : 'none';
-    });
-  }
-
-  let searchTimer = null;
-
-  function onSearchInput(value) {
-    filterGames(value);
-    clearTimeout(searchTimer);
-    const box = $('#autocomplete-box');
-
-    if (value.length < 2) {
-      box.hide().empty();
-      return;
+    function filterGames(query) {
+        const q = query.toLowerCase();
+        document.querySelectorAll('#games-grid .game-card').forEach(card => {
+            const title = card.dataset.title || '';
+            card.style.display = title.includes(q) ? 'block' : 'none';
+        });
     }
 
-    searchTimer = setTimeout(() => {
-      $.ajax({
-        url: '{% url "search_games_api" %}',
-        data: { q: value },
-        success: function(data) {
-          box.empty();
-          if (data.results.length === 0) { box.hide(); return; }
+    let searchTimer = null;
 
-          data.results.forEach(game => {
-            const img = game.background_image
-              ? `<img src="${game.background_image}" style="width:48px;height:36px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
-              : `<div style="width:48px;height:36px;background:#1a1a35;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;">🎮</div>`;
+    function onSearchInput(value) {
+        filterGames(value);
+        clearTimeout(searchTimer);
+        const box = $('#autocomplete-box');
 
-            const item = $(`
+        if (value.length < 2) {
+            box.hide().empty();
+            return;
+        }
+
+        searchTimer = setTimeout(() => {
+            $.ajax({
+                url: '{% url "search_games_api" %}',
+                data: {q: value},
+                success: function (data) {
+                    box.empty();
+                    if (data.results.length === 0) {
+                        box.hide();
+                        return;
+                    }
+
+                    data.results.forEach(game => {
+                        const img = game.background_image
+                            ? `<img src="${game.background_image}" style="width:48px;height:36px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
+                            : `<div style="width:48px;height:36px;background:#1a1a35;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;">🎮</div>`;
+
+                        const item = $(`
               <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;
                 border-bottom:1px solid rgba(140,130,255,0.1);cursor:pointer;transition:background .15s;">
                 ${img}
@@ -292,28 +150,32 @@
               </div>
             `);
 
-            item.hover(
-              function(){ $(this).css('background','#1a1a35'); },
-              function(){ $(this).css('background','transparent'); }
-            );
+                        item.hover(
+                            function () {
+                                $(this).css('background', '#1a1a35');
+                            },
+                            function () {
+                                $(this).css('background', 'transparent');
+                            }
+                        );
 
-            item.on('click', function() {
-              window.location.href = '/find-game/?name=' + encodeURIComponent(game.name);
+                        item.on('click', function () {
+                            window.location.href = '/find-game/?name=' + encodeURIComponent(game.name);
+                        });
+
+                        box.append(item);
+                    });
+                    box.show();
+                }
             });
-
-            box.append(item);
-          });
-          box.show();
-        }
-      });
-    }, 350);
-  }
-
-  $(document).on('click', function(e) {
-    if (!$(e.target).closest('#search-input, #autocomplete-box').length) {
-      $('#autocomplete-box').hide();
+        }, 350);
     }
-  });
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#search-input, #autocomplete-box').length) {
+            $('#autocomplete-box').hide();
+        }
+    });
 </script>
 
 </body>
