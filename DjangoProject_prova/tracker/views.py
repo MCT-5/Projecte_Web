@@ -1,10 +1,13 @@
+import json
+from django.http import JsonResponse
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Min
-from .models import Game, WishlistItem, Review
+from .models import Game, WishlistItem, Review, Store
 from .forms import ReviewForm, WishlistItemForm
+
 
 
 def register(request):
@@ -20,10 +23,36 @@ def register(request):
 
 
 def home(request):
+    from django.db.models import Max, Avg
+
     games = Game.objects.annotate(
         lowest_price=Min('price_listings__current_price')
     ).filter(lowest_price__isnull=False)
-    return render(request, 'tracker/home.html', {'games': games})
+
+    total_stores = Store.objects.count()
+
+    # Calcular ahorro medio: comparar precio mínimo vs precio máximo por juego
+    savings = Game.objects.annotate(
+        min_price=Min('price_listings__current_price'),
+        max_price=Max('price_listings__current_price'),
+    ).filter(min_price__isnull=False, max_price__isnull=False)
+
+    total_saving_pct = 0
+    count = 0
+    for g in savings:
+        if g.max_price and g.max_price > 0 and g.min_price < g.max_price:
+            pct = ((g.max_price - g.min_price) / g.max_price) * 100
+            if pct > 0:
+                total_saving_pct += pct
+                count += 1
+
+    avg_saving = round(total_saving_pct / count) if count > 0 else 0
+
+    return render(request, 'tracker/home.html', {
+        'games': games,
+        'total_stores': total_stores,
+        'avg_saving': avg_saving,
+    })
 
 
 def game_detail(request, game_id):
@@ -121,3 +150,38 @@ def delete_wishlist_item(request, item_id):
     if request.method == 'POST':
         item.delete()
     return redirect('my_wishlist')
+
+def search_games_api(request):
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+
+    import requests as http_requests
+    from django.conf import settings
+
+    api_key = settings.RAWG_API_KEY
+    url = f'https://api.rawg.io/api/games?key={api_key}&search={query}&page_size=8'
+
+    try:
+        response = http_requests.get(url, timeout=5)
+        data = response.json()
+        results = [
+            {
+                'id': g['id'],
+                'name': g['name'],
+                'background_image': g.get('background_image', ''),
+                'released': g.get('released', ''),
+            }
+            for g in data.get('results', [])
+        ]
+        return JsonResponse({'results': results})
+    except Exception:
+        return JsonResponse({'results': []})
+
+def find_game(request):
+    name = request.GET.get('name', '').strip()
+    if name:
+        game = Game.objects.filter(title__icontains=name).first()
+        if game:
+            return redirect('game_detail', game_id=game.id)
+    return redirect('home')

@@ -96,3 +96,5 @@ RAWG_API_KEY = os.getenv('RAWG_API_KEY', '')
 ITAD_API_KEY = os.getenv('ITAD_API_KEY', '')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+RAWG_API_KEY = os.environ.get('RAWG_API_KEY', '')

@@ -26,4 +26,10 @@ urlpatterns = [
     path('game/<int:game_id>/add-wishlist/', views.add_to_wishlist, name='add_to_wishlist'),
     path('wishlist/<int:item_id>/edit/', views.edit_wishlist_item, name='edit_wishlist_item'),
     path('wishlist/<int:item_id>/delete/', views.delete_wishlist_item, name='delete_wishlist_item'),
+
+    # API interna para búsqueda AJAX con RAWG
+    path('api/search-games/', views.search_games_api, name='search_games_api'),
+
+    # Redirige a un juego por nombre
+    path('find-game/', views.find_game, name='find_game'),
 ]
