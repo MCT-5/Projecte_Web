@@ -78,6 +78,12 @@ def step_delete_review(context):
     url = reverse('delete_review', args=[review.id])
     context.response = context.client.post(url, follow=True)
 
+@when('I click the login button from the review section')
+def step_click_login_button(context):
+    url = reverse('game_detail', args=[context.game.id])
+    context.response = context.client.get(url)
+    context.next_url = reverse('login')
+
 @then('I should see "{text}" on the game page')
 def step_see_on_page(context, text):
     url = reverse('game_detail', args=[context.game.id])
@@ -86,7 +92,10 @@ def step_see_on_page(context, text):
 
 @then('I should be redirected to login')
 def step_redirected_login(context):
-    # Si la vista tiene @login_required, devuelve un 302
+    context.test.assertIn(context.next_url.encode(), context.response.content)
+
+@then('I should get a 302 in my face from the login page')
+def step_302_for_login(context):
     context.test.assertEqual(context.response.status_code, 302)
     context.test.assertIn('login', context.response['Location'])
 

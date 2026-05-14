@@ -196,7 +196,16 @@
             </div>
         {% endif %}
     {% empty %}
-        <p style="color:var(--text3);font-size:13px;">No hay reseñas todavía. ¡Sé el primero!</p>
+        <div class="form-card" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <p style="color:var(--text3);font-size:13px;">No hay reseñas todavía. ¡Sé el primero!</p>
+            <form action="{% url 'login' %}" method="get" style="display: inline">
+                {% csrf_token %}
+                <button type="submit" class="btn-wish" style="display: inline-flex">
+                    ¡Inicia sesión!
+                </button>
+            </form>
+        </div>
+
     {% endfor %}
 
 </div>

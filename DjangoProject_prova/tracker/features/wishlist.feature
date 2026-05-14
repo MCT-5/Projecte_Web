@@ -11,7 +11,7 @@ Feature: Wishlist management
   Scenario: Cannot add to wishlist when not logged in
     Given I am not logged in
     When I add the game to my wishlist with target price 20.00
-    Then I should be redirected to login
+    Then I should get a 302 in my face from the login page
 
   Scenario: Edit a wishlist item
     Given the game is in my wishlist with target price 20.00

@@ -11,7 +11,7 @@ Feature: Review management
   Scenario: Cannot create review when not logged in
     Given I am not logged in
     When I submit a review with rating 5 and comment "Amazing game"
-    Then I should be redirected to login
+    Then I should get a 302 in my face from the login page
 
   Scenario: Edit my own review
     Given I have a review with rating 3 and comment "Good game"
@@ -36,3 +36,8 @@ Feature: Review management
   Scenario: Review comment cannot be empty
     When I submit a review with rating 5 and comment " "
     Then I should see an error message "Comment cannot be empty"
+
+  Scenario: Log in from the review button
+    Given I am not logged in
+    When I click the login button from the review section
+    Then I should be redirected to login
