@@ -1,18 +1,22 @@
 import time
-import math
 import requests
 from django.core.management.base import BaseCommand
 from tracker.models import Game, Store, PriceListing, PriceHistory
 from django.utils.timezone import now
 
-#python manage.py fetch_prices
+
 class Command(BaseCommand):
-    help = 'Busca precios actuales en la API de CheapShark usando rate limiting logarítmico.'
+    help = 'Busca precios actuales en la API de CheapShark con tolerancia a fallos de red.'
 
     def handle(self, *args, **options):
         self.stdout.write("Obteniendo lista de tiendas...")
-        stores_response = requests.get('https://www.cheapshark.com/api/1.0/stores')
-        stores_data = stores_response.json()
+        try:
+            # Añadimos timeout para que no se quede colgado infinitamente
+            stores_response = requests.get('https://www.cheapshark.com/api/1.0/stores', timeout=10)
+            stores_data = stores_response.json()
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error crítico al conectar con la API: {e}"))
+            return
 
         store_map = {}
         for store_info in stores_data:
@@ -34,48 +38,48 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("No hay juegos en la base de datos."))
             return
 
-        
-        if x > 1:
-            batch_size = max(1, int(x / 20))
-        else:
-            batch_size = 1
-
+        batch_size = max(1, int(x / 20)) if x > 1 else 1
         self.stdout.write(f"Buscando precios para {x} juegos...")
-        self.stdout.write(self.style.NOTICE(f"Estrategia activada: Pausa de 2 min cada {batch_size} juegos.\n"))
 
         for index, game in enumerate(games, start=1):
-            search_url = f"https://www.cheapshark.com/api/1.0/games?title={game.title}&limit=1"
-            res = requests.get(search_url)
+            # BLOQUE TRY-EXCEPT PARA CADA JUEGO
+            try:
+                search_url = f"https://www.cheapshark.com/api/1.0/games?title={game.title}&limit=1"
+                res = requests.get(search_url, timeout=10)
 
-            if res.status_code == 200 and res.json():
-                game_api_data = res.json()[0]
-                game_id_api = game_api_data['gameID']
+                if res.status_code == 200 and res.json():
+                    game_api_data = res.json()[0]
+                    game_id_api = game_api_data['gameID']
 
-                deals_url = f"https://www.cheapshark.com/api/1.0/games?id={game_id_api}"
-                deals_res = requests.get(deals_url)
+                    deals_url = f"https://www.cheapshark.com/api/1.0/games?id={game_id_api}"
+                    deals_res = requests.get(deals_url, timeout=10)
 
-                if deals_res.status_code == 200:
-                    deals_data = deals_res.json()
-                    for deal in deals_data.get('deals', []):
-                        store_id_api = deal['storeID']
-                        if store_id_api in store_map:
-                            store = store_map[store_id_api]
-                            current_price = float(deal['price'])
-                            product_url = f"https://www.cheapshark.com/redirect?dealID={deal['dealID']}"
+                    if deals_res.status_code == 200:
+                        deals_data = deals_res.json()
+                        for deal in deals_data.get('deals', []):
+                            store_id_api = deal['storeID']
+                            if store_id_api in store_map:
+                                store = store_map[store_id_api]
+                                current_price = float(deal['price'])
+                                product_url = f"https://www.cheapshark.com/redirect?dealID={deal['dealID']}"
 
-                            listing, _ = PriceListing.objects.update_or_create(
-                                game=game, store=store, format_type='DIGITAL',
-                                defaults={'current_price': current_price, 'product_url': product_url,
-                                          'last_updated': now()}
-                            )
-                            PriceHistory.objects.create(price_listing=listing, recorded_price=current_price)
-                            self.stdout.write(f"  Oferta guardada: {game.title} a {current_price}€ en {store.name}")
+                                listing, _ = PriceListing.objects.update_or_create(
+                                    game=game, store=store, format_type='DIGITAL',
+                                    defaults={'current_price': current_price, 'product_url': product_url,
+                                              'last_updated': now()}
+                                )
+                                PriceHistory.objects.create(price_listing=listing, recorded_price=current_price)
+                                self.stdout.write(f"  Oferta guardada: {game.title} a {current_price}€")
 
-            # Control de descanso 
+            except requests.exceptions.RequestException as e:
+                # Si hay error de red (como el tuyo), lo avisamos y seguimos con el siguiente
+                self.stdout.write(self.style.ERROR(f"  Error de red con {game.title}: {e}"))
+                time.sleep(5)  # Pausa corta de seguridad antes de reintentar el siguiente
+                continue
+
+                # Control de descanso
             if index % batch_size == 0 and index < x:
-                self.stdout.write(self.style.WARNING(
-                    f"\n[Lote completado: {index}/{x} juegos] -> Descansando 2 minutos para no saturar la API..."))
-                time.sleep(60)
-                self.stdout.write(self.style.SUCCESS("Descanso finalizado. Retomando la búsqueda...\n"))
+                self.stdout.write(self.style.WARNING(f"\n[Lote completado: {index}/{x}] -> Pausa de control..."))
+                time.sleep(60)  # He bajado el sleep a 60 para que no sea eterno, pero ajusta si quieres
 
         self.stdout.write(self.style.SUCCESS("\n¡Actualización completada!"))
