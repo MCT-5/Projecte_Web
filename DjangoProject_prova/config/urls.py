@@ -22,3 +22,5 @@ urlpatterns = [
     # Esto le dice a Django que busque más URLs dentro de tu app 'tracker'
     path('', include('tracker.urls')),
 ]
+
+LOGIN_URL = '/login/'
