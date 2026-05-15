@@ -1,0 +1,36 @@
+.venv/
+db.sqlite3
+.env
+.vscode/
+venv
+
+#*Docker*
+#*docker*
+
+actions-runner
+
+# Python
+__pycache__/
+*.pyc
+*.py[cod]
+*.egg-info/
+
+# IDE
+.idea/
+.idea
+
+
+# Django
+
+# OS
+.DS_Store
+
+# uv (uv.lock is NOT ignored -- it should be committed for reproducible builds)
+
+# Docker
+db.sqlite3-journal
+
+
+*_initial.py
+
+**/reports/*.json
