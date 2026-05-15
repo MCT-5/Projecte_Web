@@ -1,77 +1,182 @@
-{% extends 'base.html' %}
-{% block title %}GameDeal — Game Catalog{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Deal Tracker — Comparador de videojuegos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap"
+          rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
 
-{% block extra_head %}
-<style>
-  .search-bar { display: flex; gap: .75rem; margin-bottom: 2rem; max-width: 500px; }
-  .search-bar input { flex: 1; }
-  .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.25rem; }
-  .game-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; text-decoration: none; color: inherit;
-    display: block; transition: transform .18s, border-color .18s, box-shadow .18s;
-  }
-  .game-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 8px 30px #6c63ff22; }
-  .game-cover { width: 100%; height: 280px; object-fit: cover; background: var(--surface2); display: block; }
-  .game-cover-placeholder { width: 100%; height: 280px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 3rem; }
-  .game-info { padding: 1rem; }
-  .game-info h3 { font-size: .95rem; margin-bottom: .4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .game-meta { display: flex; justify-content: space-between; align-items: center; margin-top: .5rem; }
-  .empty-state { grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--muted); }
-  .empty-state h3 { font-size: 1.4rem; margin-bottom: .5rem; }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="container">
-  <div class="page-header flex justify-between items-center">
-    <div>
-      <h1>Game Catalog</h1>
-      <p class="text-muted">Showing {{ games|length }} game{% if games|length != 1 %}s{% endif %}</p>
-    </div>
-    {% if user.is_authenticated %}
-      <a href="{% url 'game_add' %}" class="btn-primary">+ Add Game</a>
-    {% endif %}
-  </div>
-
-  <form method="get" class="search-bar">
-    <input class="form-control" type="text" name="q" value="{{ query }}" placeholder="Search games…">
-    <button class="btn-primary" type="submit">Search</button>
-    {% if query %}<a href="{% url 'home' %}" class="btn-secondary">Clear</a>{% endif %}
-  </form>
-
-  <div class="game-grid">
-    {% for game in games %}
-      <a href="{% url 'game_detail' game.id %}" class="game-card">
-        {% if game.cover_image_url %}
-          <img src="{{ game.cover_image_url }}" alt="{{ game.title }}" class="game-cover">
-        {% else %}
-          <div class="game-cover-placeholder">🎮</div>
-        {% endif %}
-        <div class="game-info">
-          <h3 title="{{ game.title }}">{{ game.title }}</h3>
-          <div class="flex gap-2 mt-1">
-            <span class="badge badge-accent">{{ game.platform }}</span>
-            <span class="badge badge-yellow">{{ game.genre }}</span>
-          </div>
-          <div class="game-meta mt-2">
-            {% if game.lowest_price %}
-              <span class="price-tag">€{{ game.lowest_price|floatformat:2 }}</span>
-            {% else %}
-              <span class="text-muted text-sm">No prices yet</span>
-            {% endif %}
-          </div>
-        </div>
-      </a>
-    {% empty %}
-      <div class="empty-state">
-        <h3>No games found</h3>
-        <p>Try a different search or add the first game.</p>
+<!-- TOPBAR -->
+<nav class="topbar">
+    <a href="{% url 'home' %}" class="logo">
+        <div class="logo-icon">🎮</div>
+        Deal Tracker
+    </a>
+    <div class="topbar-nav">
         {% if user.is_authenticated %}
-          <a href="{% url 'game_add' %}" class="btn-primary" style="margin-top:1rem;">+ Add Game</a>
+            <span style="font-size:13px; color:var(--text2);">Hola, <strong
+                    style="color:var(--accent2);">{{ user.username }}</strong></span>
+            <a href="{% url 'home' %}" class="nav-link active">Inicio</a>
+            <a href="#games-grid" class="nav-link">Catálogo</a>
+            <a href="{% url 'my_wishlist' %}" class="nav-link">Wishlist</a>
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-outline">Cerrar sesión</button>
+            </form>
+        {% else %}
+            <a href="{% url 'home' %}" class="nav-link active">Inicio</a>
+            <a href="#games-grid" class="nav-link">Catálogo</a>
+            <a href="{% url 'login' %}" class="nav-link">Iniciar sesión</a>
+            <a href="{% url 'register' %}" class="btn-primary">Registrarse</a>
         {% endif %}
-      </div>
-    {% endfor %}
-  </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero-section">
+    <h1>El <span>mejor precio</span> para<br>tus videojuegos</h1>
+    <p>Compara precios en Steam, GOG, Humble Store y más.<br>Digital y físico. Todo en un solo lugar.</p>
+    <div style="max-width:540px; margin: 0 auto; position: relative;">
+        <div class="search-wrap">
+            <input id="search-input" placeholder="Busca un juego... p.ej. Elden Ring" autocomplete="off"
+                   oninput="onSearchInput(this.value)"/>
+            <button onclick="filterGames(document.getElementById('search-input').value)">🔍 Buscar</button>
+        </div>
+        <div id="autocomplete-box" style="
+      display:none; position:absolute; top:100%; left:0; right:0; z-index:200;
+      background:#13132a; border:1px solid rgba(140,130,255,0.3);
+      border-radius:0 0 12px 12px; overflow:hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    "></div>
+    </div>
 </div>
-{% endblock %}
+
+<!-- STATS -->
+<div class="section">
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-num">{{ games|length }}</div>
+            <div class="stat-label">Juegos con ofertas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">{{ total_stores }}</div>
+            <div class="stat-label">Tiendas comparadas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" style="color:var(--green);">~{{ avg_saving }}%</div>
+            <div class="stat-label">Ahorro medio vs más caro</div>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">Catálogo de juegos</span>
+        <span style="font-size:12px; color:var(--text3);">{{ games|length }} juegos con ofertas activas</span>
+    </div>
+
+    <div class="games-grid" id="games-grid">
+        {% for game in games %}
+            <a href="{% url 'game_detail' game.id %}" class="game-card" data-title="{{ game.title|lower }}">
+                {% if game.cover_image_url %}
+                    <img src="{{ game.cover_image_url }}" alt="{{ game.title }}" class="game-thumb">
+                {% else %}
+                    <div class="game-thumb">🎮</div>
+                {% endif %}
+                <div class="game-info">
+                    <div class="game-title">{{ game.title }}</div>
+                    <div class="game-price">desde {{ game.lowest_price|floatformat:2 }} €</div>
+                    <div class="game-platform">{{ game.platform }} · {{ game.genre }}</div>
+                </div>
+            </a>
+        {% empty %}
+            <div class="no-games">
+                <h3>No hay juegos con ofertas todavía</h3>
+                <p>Ejecuta el script de precios para llenar la base de datos.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+    function filterGames(query) {
+        const q = query.toLowerCase();
+        document.querySelectorAll('#games-grid .game-card').forEach(card => {
+            const title = card.dataset.title || '';
+            card.style.display = title.includes(q) ? 'block' : 'none';
+        });
+    }
+
+    let searchTimer = null;
+
+    function onSearchInput(value) {
+        filterGames(value);
+        clearTimeout(searchTimer);
+        const box = $('#autocomplete-box');
+
+        if (value.length < 2) {
+            box.hide().empty();
+            return;
+        }
+
+        searchTimer = setTimeout(() => {
+            $.ajax({
+                url: '{% url "search_games_api" %}',
+                data: {q: value},
+                success: function (data) {
+                    box.empty();
+                    if (data.results.length === 0) {
+                        box.hide();
+                        return;
+                    }
+
+                    data.results.forEach(game => {
+                        const img = game.background_image
+                            ? `<img src="${game.background_image}" style="width:48px;height:36px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
+                            : `<div style="width:48px;height:36px;background:#1a1a35;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;">🎮</div>`;
+
+                        const item = $(`
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;
+                border-bottom:1px solid rgba(140,130,255,0.1);cursor:pointer;transition:background .15s;">
+                ${img}
+                <div>
+                  <div style="font-size:13px;font-weight:500;color:#e8e6ff;">${game.name}</div>
+                  <div style="font-size:11px;color:#4a4868;">${game.released || ''}</div>
+                </div>
+              </div>
+            `);
+
+                        item.hover(
+                            function () {
+                                $(this).css('background', '#1a1a35');
+                            },
+                            function () {
+                                $(this).css('background', 'transparent');
+                            }
+                        );
+
+                        item.on('click', function () {
+                            window.location.href = '/find-game/?name=' + encodeURIComponent(game.name);
+                        });
+
+                        box.append(item);
+                    });
+                    box.show();
+                }
+            });
+        }, 350);
+    }
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#search-input, #autocomplete-box').length) {
+            $('#autocomplete-box').hide();
+        }
+    });
+</script>
+
+</body>
+</html>

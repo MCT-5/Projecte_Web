@@ -1,117 +1,232 @@
-{% extends 'base.html' %}
-{% block title %}{{ game.title }} — GameDeal{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{ game.title }} — Deal Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap"
+          rel="stylesheet"/>
+    <link href="{% static 'css/game_detail.css' %}" rel="stylesheet">
+</head>
+<body>
 
-{% block extra_head %}
-<style>
-  .hero { display: flex; gap: 2rem; margin-bottom: 2.5rem; align-items: flex-start; }
-  .hero-cover { width: 220px; flex-shrink: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
-  .hero-cover img { width: 100%; display: block; }
-  .hero-cover-ph { width: 220px; height: 300px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 4rem; border-radius: var(--radius); border: 1px solid var(--border); }
-  .hero-info h1 { font-size: 2rem; margin-bottom: .75rem; }
-  .hero-actions { margin-top: 1.5rem; display: flex; gap: .75rem; flex-wrap: wrap; }
-  .wishlist-box { background: var(--surface2); border: 1px solid var(--border); padding: 1rem 1.2rem; border-radius: var(--radius); margin-top: 1.2rem; }
-  .wishlist-box label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .4rem; }
-  .wishlist-box .inline { display: flex; gap: .5rem; align-items: center; }
-  .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
-  .listing-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: .75rem; border-left: 3px solid var(--accent); }
-  .listing-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
-  .listing-header h3 { font-size: 1rem; }
-  .listing-meta { display: flex; gap: .75rem; flex-wrap: wrap; font-size: .85rem; color: var(--muted); margin-top: .4rem; }
-  .listing-actions { display: flex; gap: .5rem; margin-top: .75rem; }
-  .history-mini { margin-top: .75rem; font-size: .82rem; color: var(--muted); }
-  .history-mini table { width: 100%; border-collapse: collapse; }
-  .history-mini td, .history-mini th { padding: .3rem .6rem; border-bottom: 1px solid var(--border); }
-  .history-mini th { color: var(--muted); font-weight: 600; font-size: .78rem; }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="container">
-  <a href="{% url 'home' %}" class="btn-secondary btn-sm" style="margin-bottom:1.5rem;display:inline-flex;">← Back to catalog</a>
-
-  <div class="hero">
-    {% if game.cover_image_url %}
-      <div class="hero-cover"><img src="{{ game.cover_image_url }}" alt="{{ game.title }}"></div>
-    {% else %}
-      <div class="hero-cover-ph">🎮</div>
-    {% endif %}
-    <div class="hero-info">
-      <h1>{{ game.title }}</h1>
-      <div class="flex gap-2 mt-2">
-        <span class="badge badge-accent">{{ game.platform }}</span>
-        <span class="badge badge-yellow">{{ game.genre }}</span>
-      </div>
-
-      {% if user.is_authenticated %}
-        <div class="hero-actions">
-          <a href="{% url 'game_edit' game.pk %}" class="btn-secondary btn-sm">✏️ Edit Game</a>
-          <a href="{% url 'game_delete' game.pk %}" class="btn-danger btn-sm">🗑 Delete Game</a>
-          <a href="{% url 'pricelisting_add' game.id %}" class="btn-success btn-sm">+ Add Price</a>
-        </div>
-      {% endif %}
-
-      {% if user.is_authenticated %}
-        {% if user_wishlist_item %}
-          <div class="wishlist-box" style="border-color: var(--accent2);">
-            <p style="color: var(--accent2); font-weight:600; margin-bottom:.4rem;">⭐ In your wishlist</p>
-            <p class="text-sm text-muted">Target: €{{ user_wishlist_item.target_price|floatformat:2 }}</p>
-            <div class="flex gap-2 mt-2">
-              <a href="{% url 'wishlist_edit' user_wishlist_item.pk %}" class="btn-secondary btn-sm">Edit</a>
-              <a href="{% url 'wishlist_delete' user_wishlist_item.pk %}" class="btn-danger btn-sm">Remove</a>
-            </div>
-          </div>
-        {% else %}
-          <div class="wishlist-box">
-            <label>Alert me when price drops below (€):</label>
-            <form method="post" action="{% url 'add_to_wishlist' game.id %}">
-              {% csrf_token %}
-              <div class="inline">
-                <input class="form-control" type="number" step="0.01" name="target_price" min="0" required placeholder="e.g. 19.99" style="max-width:160px;">
-                <button class="btn-success" type="submit">⭐ Add to Wishlist</button>
-              </div>
+<nav class="topbar">
+    <a href="{% url 'home' %}" class="logo">
+        <div class="logo-icon">🎮</div>
+        Deal Tracker
+    </a>
+    <div class="topbar-nav">
+        {% if user.is_authenticated %}
+            <span style="font-size:13px; color:var(--text2);">Hola, <strong
+                    style="color:var(--accent2);">{{ user.username }}</strong></span>
+            <a href="{% url 'my_wishlist' %}" class="nav-link">⭐ Wishlist</a>
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-outline">Cerrar sesión</button>
             </form>
-          </div>
+        {% else %}
+            <a href="{% url 'login' %}" class="nav-link">Iniciar sesión</a>
+            <a href="{% url 'register' %}" class="btn-primary">Registrarse</a>
         {% endif %}
-      {% else %}
-        <p class="text-muted text-sm" style="margin-top:1rem;"><a href="{% url 'login' %}" style="color:var(--accent);">Sign in</a> to track this game.</p>
-      {% endif %}
     </div>
-  </div>
+</nav>
 
-  <div class="section-title">Price Listings</div>
-  {% for listing in listings %}
-    <div class="listing-card">
-      <div class="listing-header">
-        <h3>{{ listing.store.name }}</h3>
-        <span class="price-tag">€{{ listing.current_price|floatformat:2 }}</span>
-      </div>
-      <div class="listing-meta">
-        <span>{{ listing.get_format_type_display }}</span>
-        <a href="{{ listing.product_url }}" target="_blank" style="color: var(--accent);">Visit store →</a>
-        <span>Updated {{ listing.last_updated|date:"d M Y" }}</span>
-      </div>
-      {% if user.is_authenticated %}
-        <div class="listing-actions">
-          <a href="{% url 'pricelisting_edit' listing.pk %}" class="btn-secondary btn-sm">Edit</a>
-          <a href="{% url 'pricelisting_delete' listing.pk %}" class="btn-danger btn-sm">Delete</a>
-        </div>
-      {% endif %}
-      {% if listing.price_history.all %}
-        <details class="history-mini">
-          <summary style="cursor:pointer; margin-bottom:.5rem; color: var(--muted);">Price history ({{ listing.price_history.count }} entries)</summary>
-          <table>
-            <tr><th>Date</th><th>Price</th></tr>
-            {% for h in listing.price_history.all %}
-              <tr><td>{{ h.timestamp|date:"d M Y H:i" }}</td><td>€{{ h.recorded_price }}</td></tr>
+<div class="detail-wrap">
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
             {% endfor %}
-          </table>
-        </details>
-      {% endif %}
+        </ul>
+    {% endif %}
+
+    <div class="breadcrumb">
+        <a href="{% url 'home' %}">← Catálogo</a> / {{ game.title }}
     </div>
-  {% empty %}
-    <div class="card"><div class="card-body text-muted">No price listings yet.
-      {% if user.is_authenticated %}<a href="{% url 'pricelisting_add' game.id %}" style="color:var(--accent);">Add one →</a>{% endif %}
-    </div></div>
-  {% endfor %}
+
+    <div class="detail-header">
+        {% if game.cover_image_url %}
+            <img src="{{ game.cover_image_url }}" alt="{{ game.title }}" class="detail-cover">
+        {% else %}
+            <div class="detail-cover-placeholder">🎮</div>
+        {% endif %}
+        <div>
+            <div class="detail-title">{{ game.title }}</div>
+            <div class="detail-meta">{{ game.platform }}</div>
+            <div class="tags">
+                <span class="tag genre">{{ game.genre }}</span>
+                <span class="tag">{{ game.platform }}</span>
+            </div>
+
+            {% if user.is_authenticated %}
+                <form action="{% url 'add_to_wishlist' game.id %}" method="post" class="wish-form">
+                    {% csrf_token %}
+                    <label>♡ Avisarme cuando baje de</label>
+                    <input type="number" step="0.01" name="target_price" placeholder="0.00" required>
+                    <span style="font-size:13px;color:var(--text2);">€</span>
+                    <button type="submit" class="btn-wish">Añadir a Wishlist</button>
+                </form>
+            {% else %}
+                <p style="margin-top:14px;font-size:13px;color:var(--text3);">
+                    <a href="{% url 'login' %}" style="color:var(--accent2);">Inicia sesión</a> para añadir a tu
+                    wishlist.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <p class="section-label">Comparar precios</p>
+    {% if listings %}
+        <table class="price-table">
+            <thead>
+            <tr>
+                <th>Tienda</th>
+                <th>Formato</th>
+                <th>Precio</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for listing in listings %}
+                <tr>
+                    <td><span class="store-name">{{ listing.store.name }}</span></td>
+                    <td>
+                        {% if listing.format_type == 'DIGITAL' %}
+                            <span class="badge digital">Digital</span>
+                        {% else %}
+                            <span class="badge fisico">Físico</span>
+                        {% endif %}
+                    </td>
+                    <td>
+              <span class="price-value {% if forloop.first %}best{% endif %}">
+                {{ listing.current_price|floatformat:2 }} €
+              </span>
+                        {% if forloop.first %}
+                            <span class="badge best">mejor precio</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ listing.product_url }}" target="_blank" class="btn-go">Ir a tienda →</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color:var(--text3);font-size:13px;">No hay precios registrados todavía.</p>
+    {% endif %}
+
+    {% for listing in listings %}
+        {% if listing.price_history.all %}
+            <div class="chart-card">
+                <div class="chart-title">Histórico de precio — {{ listing.store.name }}</div>
+                <div class="chart-sub">{{ listing.get_format_type_display }}</div>
+                <div class="chart-area" id="chart-{{ listing.id }}">
+                    {% with history=listing.price_history.all %}
+                        {% for h in history %}
+                            <div class="bar {% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}"
+                                 style="height: {{ h.recorded_price|floatformat:0 }}px;"
+                                 title="{{ h.recorded_price|floatformat:2 }} € · {{ h.timestamp|date:'d M Y' }}">
+                            </div>
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+                <div class="chart-legend">
+                    <div class="leg-item">
+                        <div class="leg-dot" style="background:var(--green)"></div>
+                        Actual
+                    </div>
+                    <div class="leg-item">
+                        <div class="leg-dot" style="background:rgba(124,111,255,.5)"></div>
+                        Histórico
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <p class="section-label">Reseñas</p>
+
+    {% if user.is_authenticated and not user_review %}
+        <div class="form-card">
+            <h3>✍️ Escribe tu reseña</h3>
+            <form action="{% url 'add_review' game.id %}" method="post">
+                {% csrf_token %}
+                <label>Puntuación</label>
+                {{ review_form.rating }}
+                <label>Comentario</label>
+                {{ review_form.comment }}
+                <button type="submit" class="btn-submit">Publicar reseña</button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% if user_review %}
+        <div class="review-card mine">
+            <div class="review-top">
+                <span class="review-user">{{ user_review.user.username }} <span
+                        style="font-size:11px;color:var(--accent);">(tú)</span></span>
+                <span class="review-stars">{{ user_review.rating }} ★</span>
+            </div>
+            <div class="review-text">{{ user_review.comment }}</div>
+            <div class="review-date" style="margin-top:6px;">{{ user_review.created_at|date:"d M Y" }}</div>
+            <div class="review-actions">
+                <a href="{% url 'edit_review' user_review.id %}" class="btn-sm edit">Editar</a>
+                <form action="{% url 'delete_review' user_review.id %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-sm del" onclick="return confirm('¿Eliminar tu reseña?')">Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    {% for review in reviews %}
+        {% if review.user != request.user %}
+            <div class="review-card">
+                <div class="review-top">
+                    <span class="review-user">{{ review.user.username }}</span>
+                    <span class="review-stars">{{ review.rating }} ★</span>
+                </div>
+                <div class="review-text">{{ review.comment }}</div>
+                <div class="review-date" style="margin-top:6px;">{{ review.created_at|date:"d M Y" }}</div>
+            </div>
+        {% endif %}
+    {% empty %}
+        <div class="form-card" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <p style="color:var(--text3);font-size:13px;">No hay reseñas todavía. ¡Sé el primero!</p>
+            {% if not user.is_authenticated %}
+                <form action="{% url 'login' %}" method="get" style="display: inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-wish" style="display: inline-flex">
+                        ¡Inicia sesión!
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+    {% endfor %}
+
 </div>
-{% endblock %}
+
+<script>
+    // Normalizar alturas del historial de precios
+    document.querySelectorAll('.chart-area').forEach(area => {
+        const bars = area.querySelectorAll('.bar');
+        let max = 0;
+        bars.forEach(b => {
+            const h = parseFloat(b.style.height);
+            if (h > max) max = h;
+        });
+        if (max > 0) bars.forEach(b => {
+            const h = parseFloat(b.style.height);
+            b.style.height = Math.max((h / max) * 60, 4) + 'px';
+        });
+    });
+</script>
+
+</body>
+</html>

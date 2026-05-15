@@ -4,16 +4,16 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Iniciar Sesión — Deal Tracker</title>
+    <title>Editar Reseña — Deal Tracker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap"
           rel="stylesheet"/>
-    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <link rel="stylesheet" href="{% static 'css/edit_review.css' %}">
 </head>
 <body>
 
 <div class="back-link">
-    <a href="{% url 'home' %}">← Volver al catálogo</a>
+    <a href="{% url 'game_detail' review.game.id %}">← Volver a {{ review.game.title }}</a>
 </div>
 
 <div class="card">
@@ -21,23 +21,14 @@
         <div class="logo-icon">🎮</div>
         <span class="logo-text">Deal Tracker</span>
     </div>
-    <h2>Iniciar sesión</h2>
-    <p class="card-sub">Accede para gestionar tu wishlist y reseñas</p>
+    <h2>Editar reseña</h2>
+    <p class="card-sub">{{ review.game.title }}</p>
 
     <form method="post">
         {% csrf_token %}
-        {% if form.errors %}
-            <ul class="errorlist">
-                <li>Usuario o contraseña incorrectos.</li>
-            </ul>
-        {% endif %}
         {{ form.as_p }}
-        <button type="submit" class="btn-submit">Entrar →</button>
+        <button type="submit" class="btn-submit">Guardar cambios →</button>
     </form>
-
-    <div class="card-footer">
-        ¿No tienes cuenta? <a href="{% url 'register' %}">Regístrate aquí</a>
-    </div>
 </div>
 
 </body>
