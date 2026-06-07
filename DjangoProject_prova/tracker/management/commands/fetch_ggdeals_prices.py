@@ -3,12 +3,6 @@ Comando: fetch_ggdeals_prices
 Uso:
     python manage.py fetch_ggdeals_prices
     python manage.py fetch_ggdeals_prices --region eu
-
-Actualiza PriceListing y PriceHistory para todos los juegos que tienen
-steam_app_id, usando GG.deals. Distingue entre tiendas retail oficiales
-y keyshops (G2A, Kinguin, etc.).
-
-Requiere GGDEALS_API_KEY en el .env.
 """
 
 import logging
@@ -20,7 +14,6 @@ from tracker.models import Game, Store, PriceListing, PriceHistory
 
 logger = logging.getLogger(__name__)
 
-# Nombres de tienda que se guardarán en la BD
 STORE_RETAIL   = "GG.deals Retail"
 STORE_KEYSHOPS = "GG.deals Keyshops"
 
@@ -38,7 +31,6 @@ def _get_or_create_store(name: str) -> Store:
 
 
 def _save_price(game: Game, store: Store, price_raw, url: str):
-    """Crea o actualiza PriceListing y añade snapshot a PriceHistory."""
     price = Decimal(str(price_raw)).quantize(Decimal("0.01"))
     listing, _ = PriceListing.objects.update_or_create(
         game=game,
@@ -50,10 +42,7 @@ def _save_price(game: Game, store: Store, price_raw, url: str):
             "last_updated":  now(),
         },
     )
-    PriceHistory.objects.create(
-        price_listing  = listing,
-        recorded_price = price,
-    )
+    PriceHistory.objects.create(price_listing=listing, recorded_price=price)
     return price
 
 
@@ -90,7 +79,7 @@ class Command(BaseCommand):
         store_retail   = _get_or_create_store(STORE_RETAIL)
         store_keyshops = _get_or_create_store(STORE_KEYSHOPS)
 
-        saved  = 0
+        saved   = 0
         skipped = 0
 
         for game in games_qs:
@@ -121,8 +110,6 @@ class Command(BaseCommand):
             except Exception as exc:
                 logger.error("Error guardando precio para %s: %s", game, exc)
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"\n[GG.deals] Hecho — {saved} juegos actualizados · {skipped} sin datos."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(
+            f"\n[GG.deals] Hecho — {saved} juegos actualizados · {skipped} sin datos."
+        ))

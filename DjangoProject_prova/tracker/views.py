@@ -194,24 +194,22 @@ def search_games_api(request):
     if len(query) < 2:
         return JsonResponse({'results': []})
 
-    import requests as http_requests
-    from django.conf import settings
-
-    api_key = settings.RAWG_API_KEY
-    url = f'https://api.rawg.io/api/games?key={api_key}&search={query}&page_size=8'
+    from tracker.services import IGDBService
 
     try:
-        response = http_requests.get(url, timeout=5)
-        data = response.json()
-        results = [
-            {
-                'id': g['id'],
-                'name': g['name'],
-                'background_image': g.get('background_image', ''),
-                'released': g.get('released', ''),
-            }
-            for g in data.get('results', [])
-        ]
+        igdb    = IGDBService()
+        games   = igdb.search_games(query, limit=8)
+        results = []
+        for g in games:
+            cover_url = ''
+            if g.get('cover') and g['cover'].get('url'):
+                cover_url = 'https:' + g['cover']['url'].replace('t_thumb', 't_cover_big')
+            results.append({
+                'id':               g.get('id'),
+                'name':             g.get('name', ''),
+                'background_image': cover_url,
+                'released':         g.get('first_release_date', ''),
+            })
         return JsonResponse({'results': results})
     except Exception:
         return JsonResponse({'results': []})

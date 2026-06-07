@@ -96,9 +96,20 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
-RAWG_API_KEY = os.getenv('RAWG_API_KEY', '')
 ITAD_API_KEY = os.getenv('ITAD_API_KEY', '')
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# ── IGDB (vía Twitch OAuth2) ───────────────────────────────────────────────
+IGDB_CLIENT_ID     = os.getenv('IGDB_CLIENT_ID', '')
+IGDB_CLIENT_SECRET = os.getenv('IGDB_CLIENT_SECRET', '')
 
-RAWG_API_KEY = os.environ.get('RAWG_API_KEY', '')
+# ── GG.deals ──────────────────────────────────────────────────────────────
+GGDEALS_API_KEY = os.getenv('GGDEALS_API_KEY', '')
+
+# ── Caché local (necesario para el token de IGDB) ─────────────────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

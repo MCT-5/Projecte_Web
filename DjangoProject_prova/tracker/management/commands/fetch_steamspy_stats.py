@@ -1,17 +1,8 @@
 """
 Comando: fetch_steamspy_stats
 Uso:
-    python manage.py fetch_steamspy_stats
     python manage.py fetch_steamspy_stats --mode top100
-
-Enriquece los juegos con estadísticas de SteamSpy:
-  - Propietarios estimados
-  - Jugadores en las últimas 2 semanas
-  - Reviews positivas / negativas
-  - Tiempo de juego medio (minutos)
-  - Top tags de la comunidad Steam
-
-Sin API key. Rate limit respetado con time.sleep(1.1) entre peticiones.
+    python manage.py fetch_steamspy_stats --mode all_games
 """
 
 import time
@@ -24,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 def _update_game(game: Game, data: dict):
-    """Escribe los campos de SteamSpy en el objeto Game y lo guarda."""
     owners_raw = data.get("owners", "0 .. 0")
     owners_min = owners_raw.split("..")[0].strip().replace(",", "").replace(" ", "")
 
@@ -41,12 +31,8 @@ def _update_game(game: Game, data: dict):
         )
 
     game.save(update_fields=[
-        "steamspy_owners",
-        "steamspy_positive",
-        "steamspy_negative",
-        "steamspy_playtime",
-        "steamspy_players_2w",
-        "steamspy_tags",
+        "steamspy_owners", "steamspy_positive", "steamspy_negative",
+        "steamspy_playtime", "steamspy_players_2w", "steamspy_tags",
     ])
 
 
@@ -58,10 +44,7 @@ class Command(BaseCommand):
             "--mode",
             choices=["top100", "all_games"],
             default="all_games",
-            help=(
-                "top100    → solo actualiza juegos que aparecen en el top 100 de propietarios. "
-                "all_games → actualiza todos los juegos con steam_app_id (1 req/s)."
-            ),
+            help="top100 → solo top 100 propietarios. all_games → todos (1 req/s).",
         )
 
     def handle(self, *args, **options):
@@ -75,13 +58,12 @@ class Command(BaseCommand):
             try:
                 top100 = service.get_top100_by_owners()
             except Exception as exc:
-                self.stdout.write(self.style.ERROR(f"Error al llamar a SteamSpy: {exc}"))
+                self.stdout.write(self.style.ERROR(f"Error: {exc}"))
                 return
 
             for appid_str, data in top100.items():
                 try:
-                    steam_id = int(appid_str)
-                    game = Game.objects.filter(steam_app_id=steam_id).first()
+                    game = Game.objects.filter(steam_app_id=int(appid_str)).first()
                     if game:
                         _update_game(game, data)
                         updated += 1
@@ -90,7 +72,7 @@ class Command(BaseCommand):
                     logger.error("Error top100 appid=%s: %s", appid_str, exc)
                     errors += 1
 
-        else:  # all_games
+        else:
             games_qs = Game.objects.exclude(steam_app_id__isnull=True)
             total    = games_qs.count()
             self.stdout.write(f"[SteamSpy] Actualizando {total} juegos (1 req/s)...")
@@ -106,10 +88,8 @@ class Command(BaseCommand):
                     logger.error("Error appid=%s: %s", game.steam_app_id, exc)
                     errors += 1
                 finally:
-                    time.sleep(1.1)  # respetar rate limit de 1 req/s
+                    time.sleep(1.1)
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"\n[SteamSpy] Hecho — {updated} actualizados · {errors} errores."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(
+            f"\n[SteamSpy] Hecho — {updated} actualizados · {errors} errores."
+        ))

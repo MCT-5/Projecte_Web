@@ -1,85 +1,167 @@
+"""
+Comando: fetch_prices (CheapShark)
+
+Estrategia:
+  1. Juegos con steam_app_id → busca por Steam ID en lotes de 100 (exacto)
+  2. Juegos sin steam_app_id → busca por título como fallback
+"""
+
 import time
 import requests
+from decimal import Decimal
 from django.core.management.base import BaseCommand
-from tracker.models import Game, Store, PriceListing, PriceHistory
 from django.utils.timezone import now
+from tracker.models import Game, Store, PriceListing, PriceHistory
+
+CHEAPSHARK_BASE = "https://www.cheapshark.com/api/1.0"
+
+
+def get_or_create_store(store_info: dict) -> Store:
+    store, _ = Store.objects.get_or_create(
+        name=store_info["storeName"],
+        defaults={
+            "website_url":    f"https://www.cheapshark.com/redirect?storeID={store_info['storeID']}",
+            "sells_physical": False,
+            "sells_digital":  True,
+        },
+    )
+    return store
+
+
+def save_deal(game: Game, store: Store, price: float, deal_id: str, stdout):
+    listing, _ = PriceListing.objects.update_or_create(
+        game=game,
+        store=store,
+        format_type="DIGITAL",
+        defaults={
+            "current_price": Decimal(str(price)).quantize(Decimal("0.01")),
+            "product_url":   f"https://www.cheapshark.com/redirect?dealID={deal_id}",
+            "last_updated":  now(),
+        },
+    )
+    PriceHistory.objects.create(
+        price_listing  = listing,
+        recorded_price = listing.current_price,
+    )
+    stdout.write(f"  ✔ {game.title} — {price}€ en {store.name}")
 
 
 class Command(BaseCommand):
-    help = 'Busca precios actuales en la API de CheapShark con tolerancia a fallos de red.'
+    help = "Obtiene precios de CheapShark para todos los juegos."
 
     def handle(self, *args, **options):
-        self.stdout.write("Obteniendo lista de tiendas...")
+        # ── 1. Cargar tiendas ──────────────────────────────────────────────
+        self.stdout.write("Cargando tiendas de CheapShark...")
         try:
-            # Añadimos timeout para que no se quede colgado infinitamente
-            stores_response = requests.get('https://www.cheapshark.com/api/1.0/stores', timeout=10)
-            stores_data = stores_response.json()
+            resp = requests.get(f"{CHEAPSHARK_BASE}/stores", timeout=10)
+            resp.raise_for_status()
+            stores_data = resp.json()
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error crítico al conectar con la API: {e}"))
+            self.stdout.write(self.style.ERROR(f"Error al conectar con CheapShark: {e}"))
             return
 
         store_map = {}
-        for store_info in stores_data:
-            if store_info['isActive'] == 1:
-                store, _ = Store.objects.get_or_create(
-                    name=store_info['storeName'],
-                    defaults={
-                        'website_url': f"https://www.cheapshark.com/redirect?storeID={store_info['storeID']}",
-                        'sells_physical': False,
-                        'sells_digital': True
-                    }
-                )
-                store_map[store_info['storeID']] = store
+        for s in stores_data:
+            if s["isActive"] == 1:
+                store_map[s["storeID"]] = get_or_create_store(s)
+        self.stdout.write(f"  {len(store_map)} tiendas activas.")
 
-        games = Game.objects.all()
-        x = games.count()
+        # ── 2. Separar juegos con y sin steam_app_id ───────────────────────
+        games_with_steam    = list(Game.objects.exclude(steam_app_id__isnull=True))
+        games_without_steam = list(Game.objects.filter(steam_app_id__isnull=True))
+        saved  = 0
+        errors = 0
 
-        if x == 0:
-            self.stdout.write(self.style.WARNING("No hay juegos en la base de datos."))
-            return
+        # ── 3. Lotes de 100 por Steam ID ───────────────────────────────────
+        self.stdout.write(
+            f"\n[1/2] Buscando por Steam ID: {len(games_with_steam)} juegos..."
+        )
+        steam_id_to_game = {str(g.steam_app_id): g for g in games_with_steam}
 
-        batch_size = max(1, int(x / 20)) if x > 1 else 1
-        self.stdout.write(f"Buscando precios para {x} juegos...")
-
-        for index, game in enumerate(games, start=1):
-            # BLOQUE TRY-EXCEPT PARA CADA JUEGO
-            try:
-                search_url = f"https://www.cheapshark.com/api/1.0/games?title={game.title}&limit=1"
-                res = requests.get(search_url, timeout=10)
-
-                if res.status_code == 200 and res.json():
-                    game_api_data = res.json()[0]
-                    game_id_api = game_api_data['gameID']
-
-                    deals_url = f"https://www.cheapshark.com/api/1.0/games?id={game_id_api}"
-                    deals_res = requests.get(deals_url, timeout=10)
-
-                    if deals_res.status_code == 200:
-                        deals_data = deals_res.json()
-                        for deal in deals_data.get('deals', []):
-                            store_id_api = deal['storeID']
-                            if store_id_api in store_map:
-                                store = store_map[store_id_api]
-                                current_price = float(deal['price'])
-                                product_url = f"https://www.cheapshark.com/redirect?dealID={deal['dealID']}"
-
-                                listing, _ = PriceListing.objects.update_or_create(
-                                    game=game, store=store, format_type='DIGITAL',
-                                    defaults={'current_price': current_price, 'product_url': product_url,
-                                              'last_updated': now()}
-                                )
-                                PriceHistory.objects.create(price_listing=listing, recorded_price=current_price)
-                                self.stdout.write(f"  Oferta guardada: {game.title} a {current_price}€")
-
-            except requests.exceptions.RequestException as e:
-                # Si hay error de red (como el tuyo), lo avisamos y seguimos con el siguiente
-                self.stdout.write(self.style.ERROR(f"  Error de red con {game.title}: {e}"))
-                time.sleep(5)  # Pausa corta de seguridad antes de reintentar el siguiente
+        # Lotes de 10 IDs para no disparar el rate limit de CheapShark
+        BATCH = 10
+        for i in range(0, len(games_with_steam), BATCH):
+            batch   = games_with_steam[i:i + BATCH]
+            ids_str = "%2C".join(str(g.steam_app_id) for g in batch)
+            deals = None
+            for attempt in range(5):
+                try:
+                    resp = requests.get(
+                        f"{CHEAPSHARK_BASE}/deals?steamAppID={ids_str}&pageSize={BATCH}",
+                        timeout=15,
+                    )
+                    if resp.status_code == 429:
+                        wait = 10 * (attempt + 1)
+                        self.stdout.write(self.style.WARNING(
+                            f"  Rate limit (429), esperando {wait}s..."
+                        ))
+                        time.sleep(wait)
+                        continue
+                    resp.raise_for_status()
+                    deals = resp.json()
+                    break
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"  Error lote {i}: {e}"))
+                    errors += 1
+                    time.sleep(5)
+                    break
+            if not deals:
                 continue
 
-                # Control de descanso
-            if index % batch_size == 0 and index < x:
-                self.stdout.write(self.style.WARNING(f"\n[Lote completado: {index}/{x}] -> Pausa de control..."))
-                time.sleep(60)  # He bajado el sleep a 60 para que no sea eterno, pero ajusta si quieres
+            for deal in deals:
+                steam_id = deal.get("steamAppID")
+                game     = steam_id_to_game.get(str(steam_id))
+                store    = store_map.get(deal.get("storeID", ""))
+                if not game or not store:
+                    continue
+                try:
+                    save_deal(game, store, float(deal["salePrice"]), deal["dealID"], self.stdout)
+                    saved += 1
+                except Exception as e:
+                    errors += 1
 
-        self.stdout.write(self.style.SUCCESS("\n¡Actualización completada!"))
+            # Progreso cada 100 juegos procesados
+            if (i // BATCH) % 10 == 0 and i > 0:
+                self.stdout.write(self.style.NOTICE(
+                    f"  [{i}/{len(games_with_steam)} procesados]"
+                ))
+            time.sleep(2)  # pausa entre lotes
+
+        # ── 4. Búsqueda por título para juegos sin Steam ID ────────────────
+        self.stdout.write(
+            f"\n[2/2] Buscando por título: {len(games_without_steam)} juegos..."
+        )
+        for game in games_without_steam:
+            try:
+                resp = requests.get(
+                    f"{CHEAPSHARK_BASE}/games?title={game.title}&limit=1",
+                    timeout=10,
+                )
+                if resp.status_code != 200 or not resp.json():
+                    continue
+
+                game_id_api = resp.json()[0]["gameID"]
+                resp2 = requests.get(
+                    f"{CHEAPSHARK_BASE}/games?id={game_id_api}",
+                    timeout=10,
+                )
+                if resp2.status_code != 200:
+                    continue
+
+                for deal in resp2.json().get("deals", []):
+                    store = store_map.get(deal["storeID"])
+                    if not store:
+                        continue
+                    save_deal(game, store, float(deal["price"]), deal["dealID"], self.stdout)
+                    saved += 1
+
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"  Error {game.title}: {e}"))
+                errors += 1
+                time.sleep(3)
+
+            time.sleep(0.5)
+
+        self.stdout.write(self.style.SUCCESS(
+            f"\n¡Completado! {saved} precios guardados · {errors} errores."
+        ))
